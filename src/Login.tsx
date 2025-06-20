@@ -1,5 +1,5 @@
 // The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work.
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Form, Input, Checkbox, Divider, Typography } from 'antd';
 import {
 UserOutlined,
@@ -13,9 +13,8 @@ import { useNavigate } from 'react-router-dom'; // Yeni ekleme
 const { Title, Text, Paragraph } = Typography;
 const App: React.FC = () => {
 const [form] = Form.useForm();
-const [showPassword, setShowPassword] = useState<boolean>(false);
 const navigate = useNavigate(); // Yeni ekleme
-const onFinish = (values: any) => {
+const onFinish = (values: { username: string; password: string; remember?: boolean }) => {
 console.log('Form values:', values);
 navigate('/dashboard'); // Dashboard yönlendirmesi
 };
@@ -37,7 +36,7 @@ className="h-12 w-12 object-contain mr-3"
 </div>
 </div>
 <Title level={2} className="text-3xl font-bold text-white mb-6">
-Cooling Maestro'ya Hoş Geldiniz
+Cooling Maestro&apos;ya Hoş Geldiniz
 </Title>
 <Paragraph className="text-blue-100 text-lg mb-8">
 Endüstriyel soğutma hesaplamalarınızı hızlı, doğru ve güvenilir bir şekilde yapmanızı sağlayan profesyonel platformumuza hoş geldiniz.

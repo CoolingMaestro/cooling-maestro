@@ -1,6 +1,6 @@
 // The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work.
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Form, Input, Checkbox, Typography } from 'antd';
 import {
   UserOutlined,
@@ -14,9 +14,8 @@ const { Title, Text, Paragraph } = Typography;
 
 const App: React.FC = () => {
   const [form] = Form.useForm();
-  const [showPassword, setShowPassword] = useState<boolean>(false);
   
-  const onFinish = (values: any) => {
+  const onFinish = (values: { username: string; email: string; password: string; confirmPassword: string; agreement: boolean }) => {
     console.log('Form values:', values);
   };
 

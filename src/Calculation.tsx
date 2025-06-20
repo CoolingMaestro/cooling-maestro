@@ -434,7 +434,17 @@ const App: React.FC = () => {
           indoorTemperature: formValues.indoorTemperature,
           indoorHumidity: formValues.indoorHumidity,
         },
-        products: productsWithProperties.filter(p => p && p.thermalProperties),
+        products: productsWithProperties
+          .filter(p => p && p.thermalProperties)
+          .map(p => ({
+            category: p!.category,
+            product: p!.product,
+            entryTemperature: p!.entryTemperature,
+            dailyAmount: p!.dailyAmount,
+            totalCapacity: p!.totalCapacity,
+            coolingDuration: p!.coolingDuration,
+            thermalProperties: p!.thermalProperties,
+          })),
         roomDimensions,
         roomType,
         buildingLocation,

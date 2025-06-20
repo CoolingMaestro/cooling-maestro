@@ -530,7 +530,7 @@ const Karsilama: React.FC<KarsilamaProps> = ({
                   <div className="flex flex-col items-center">
                     <div className="text-center mb-4">
                       <Text className="text-lg font-semibold text-gray-800">
-                        "{customer.quote}"
+                        &ldquo;{customer.quote}&rdquo;
                       </Text>
                     </div>
                     <div className="flex items-center">

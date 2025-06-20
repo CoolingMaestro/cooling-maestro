@@ -244,7 +244,7 @@ key: 'load',
 title: 'Durum',
 dataIndex: 'status',
 key: 'status',
-render: (text: string, record: any) => (
+render: (text: string, record: { statusType?: string }) => (
 <Tag color={
 record.statusType === 'success' ? 'success' :
 record.statusType === 'warning' ? 'warning' :
@@ -257,7 +257,7 @@ record.statusType === 'processing' ? 'processing' : 'default'
 {
 title: 'Aksiyon',
 key: 'action',
-render: (_: any) => (
+render: () => (
 <div className="flex space-x-2">
 <Button type="primary" size="small" className="!rounded-button whitespace-nowrap">
 Devam Et
@@ -313,7 +313,7 @@ const notificationMenu = (
 <Text strong>Yeni Güncelleme</Text>
 <Text type="secondary" className="text-xs">1 gün önce</Text>
 </div>
-<Text className="text-gray-600 block mt-1">Cooling Maestro'nun yeni sürümü yayınlandı. Yenilikler için tıklayın.</Text>
+<Text className="text-gray-600 block mt-1">Cooling Maestro&apos;nun yeni sürümü yayınlandı. Yenilikler için tıklayın.</Text>
 </div>
 </Menu.Item>
 <Menu.Divider />
@@ -642,7 +642,7 @@ className="shadow-sm hover:shadow-md transition-shadow lg:col-span-2"
 <div className="flex items-start p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
 <i className="fas fa-exclamation-triangle text-yellow-500 mt-1 mr-3"></i>
 <div>
-<Text strong>Adana Projesi'nde giriş sıcaklığı eksik.</Text>
+<Text strong>Adana Projesi&apos;nde giriş sıcaklığı eksik.</Text>
 <div className="mt-1 flex justify-between">
 <Text className="text-gray-600 text-sm">Eksik veriyi tamamlamadan hesaplama yapılamaz.</Text>
 <Button type="link" size="small" className="text-blue-600 !rounded-button whitespace-nowrap">
@@ -678,7 +678,7 @@ Sonuçları Gör
 <div className="flex items-start p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
 <i className="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
 <div>
-<Text strong>Cooling Maestro'nun yeni sürümü yayınlandı.</Text>
+<Text strong>Cooling Maestro&apos;nun yeni sürümü yayınlandı.</Text>
 <div className="mt-1 flex justify-between">
 <Text className="text-gray-600 text-sm">Yeni özellikler ve iyileştirmeler için güncellemeyi yapın.</Text>
 <Button type="link" size="small" className="text-blue-600 !rounded-button whitespace-nowrap">

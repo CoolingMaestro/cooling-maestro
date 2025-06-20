@@ -3,7 +3,7 @@ import { getCoordinates } from "./getCoordinates";
 import { calculateWetBulbTemperature } from "./calculateWetBulbTemperature";
 import { saveCoordinatesToDB } from "../services/coordinatesService";
 import { solAirTemperatureService } from "../services/solAirTemperatureService";
-import { DesignDayData, ClimateData } from "../types/climate.types";
+import { ClimateData } from "../types/climate.types";
 
 interface ClimateDataParams {
   selectedProvince: string;

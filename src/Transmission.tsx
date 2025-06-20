@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { DesignDayData } from "./types/climate.types";
 import {
   Card,
   Select,
@@ -35,7 +36,7 @@ interface WallInsulationProps {
     directRadiation?: number;
     diffuseRadiation?: number;
     peakHour?: number;
-    designDayData?: any; // Tasarım günü saatlik verileri
+    designDayData?: DesignDayData; // Tasarım günü saatlik verileri
   } | null;
 }
 
@@ -98,8 +99,8 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
   const [floorThicknessOptions, setFloorThicknessOptions] = useState<Map<string, number[]>>(new Map());
   const [colorOptions, setColorOptions] = useState<string[]>([]);
   const [floorColorOptions, setFloorColorOptions] = useState<string[]>([]);
-  const [insulationData, setInsulationData] = useState<Map<string, any>>(new Map());
-  const [floorInsulationData, setFloorInsulationData] = useState<Map<string, any>>(new Map());
+  const [insulationData, setInsulationData] = useState<Map<string, { u_value: number; solar_absorptance: number }>>(new Map());
+  const [floorInsulationData, setFloorInsulationData] = useState<Map<string, { u_value: number; solar_absorptance: number }>>(new Map());
   const [targetIndoorTemp, setTargetIndoorTemp] = useState<number | undefined>(undefined);
   const [ambientTemp, setAmbientTemp] = useState<number | undefined>(undefined);
   const [outdoorTemp, setOutdoorTemp] = useState<number | undefined>(undefined);
@@ -120,6 +121,9 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       setOutdoorTemp(climateData.maxTemp);
     }
   }, [climateData]);
+
+  // Create a dependency key for walls data
+  const wallsDataKey = wallsData.map(w => `${w.width}_${w.height}_${w.insulationType}_${w.thickness}_${w.color}_${w.orientation}`).join(',');
 
   // Automatically recalculate loads when wallsData changes
   useEffect(() => {
@@ -143,7 +147,8 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     if (hasChanged) {
       setWallsData(newWallsData);
     }
-  }, [wallsData.map(w => `${w.width}_${w.height}_${w.insulationType}_${w.thickness}_${w.color}_${w.orientation}`).join(','), roomDimensions.location, insulationData, targetIndoorTemp, ambientTemp, outdoorTemp]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallsDataKey, roomDimensions.location, insulationData, targetIndoorTemp, ambientTemp, outdoorTemp, floorInsulationData]);
 
   // Insulation types, thickness ve color değerlerini veritabanından çek
   useEffect(() => {
@@ -164,7 +169,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
 
           // Her insulation type için thickness değerlerini grupla
           const thicknessMap = new Map<string, number[]>();
-          const dataMap = new Map<string, any>();
+          const dataMap = new Map<string, { u_value: number; solar_absorptance: number }>();
           
           data.forEach(item => {
             const key = `${item.name}_${item.thickness}_${item.insulation_color}`;
@@ -221,7 +226,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
 
           // Floor için thickness değerlerini grupla
           const thicknessMap = new Map<string, number[]>();
-          const dataMap = new Map<string, any>();
+          const dataMap = new Map<string, { u_value: number; solar_absorptance: number }>();
           
           data.forEach(item => {
             const key = `${item.name}_${item.thickness}_${item.insulation_color}`;
@@ -772,7 +777,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     {
       title: '',
       key: 'action',
-      render: (_: any, record: DoorData) => (
+      render: (_: unknown, record: DoorData) => (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Button
             type="text"
