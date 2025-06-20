@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(npm install:*)",
+      "Bash(rg:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(awk:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(sed:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm search:*)",
+      "Bash(curl:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(true)",
+      "Bash(npm run:*)",
+      "Bash(pkill:*)",
+      "Bash(npx supabase db dump:*)",
+      "Bash(gh auth:*)",
+      "Bash(npm create:*)",
+      "Bash(pdftotext:*)",
+      "Bash(sudo apt-get:*)"
+    ],
+    "deny": []
+  }
+}

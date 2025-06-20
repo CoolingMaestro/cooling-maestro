@@ -1,0 +1,223 @@
+/* Tailwind CSS direktifleri */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ant Design özelleştirmeleri ve global stiller */
+:root {
+  /* Ana renkler */
+  --primary-color: #1d4ed8;
+  --secondary-color: #3b82f6;
+  --success-color: #10b981;
+  --error-color: #ef4444;
+  --warning-color: #f59e0b;
+  
+  /* Font ayarları */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Temel reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  line-height: 1.5;
+  color: #1f2937;
+}
+
+/* Ant Design global düzeltmeler */
+.ant-btn-link {
+  border: none;
+  box-shadow: none;
+}
+
+/* Header'a özel düzeltmeler - Daha spesifik selector */
+.bg-gradient-to-r.from-blue-700.to-blue-900 {
+  /* Header içindeki tüm link butonlar beyaz olsun */
+  .ant-btn-link,
+  .ant-btn-link:not(:disabled):not(.ant-btn-disabled) {
+    color: #ffffff !important;
+    
+    &:hover,
+    &:focus,
+    &:active {
+      color: #bfdbfe !important;
+      background: transparent !important;
+    }
+  }
+  
+  /* text-white class'ını güçlendir */
+  .text-white {
+    color: #ffffff !important;
+  }
+  
+  /* hover:text-blue-200 için */
+  .hover\:text-blue-200:hover {
+    color: #bfdbfe !important;
+  }
+}
+
+/* Ant Design buton özelleştirmeleri */
+.ant-btn {
+  border-radius: 6px !important;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.ant-btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+/* Ant Design link butonları için global düzeltme */
+.ant-btn-link.text-white,
+.text-white.ant-btn-link,
+.text-white .ant-btn-link {
+  color: #ffffff !important;
+}
+
+.ant-btn-link.text-white:hover,
+.text-white.ant-btn-link:hover {
+  color: #bfdbfe !important;
+}
+
+/* Header menü link düzeltmeleri */
+header .ant-btn-link {
+  color: #ffffff !important;
+}
+
+header .ant-btn-link:hover {
+  color: #bfdbfe !important;
+}
+
+header .ant-btn-link:focus,
+header .ant-btn-link:active {
+  color: #ffffff !important;
+}
+
+/* Header'daki tüm text'ler için ek kural */
+header nav .ant-btn-link span {
+  color: inherit !important;
+}
+
+/* Tailwind text-white class'ı için güçlendirme */
+.text-white {
+  color: #ffffff !important;
+}
+
+/* Kart hover efektleri */
+.ant-card {
+  transition: all 0.3s ease;
+  border-radius: 8px !important;
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Form öğeleri */
+.ant-input,
+.ant-select-selector {
+  border-radius: 6px !important;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Swiper özelleştirmeleri */
+.swiper-pagination-bullet {
+  background-color: var(--primary-color);
+}
+
+.swiper-pagination-bullet-active {
+  background-color: var(--secondary-color);
+}
+
+/* ECharts grafik stili */
+#featuresChart {
+  min-height: 350px;
+}
+
+/* Özel rounded button sınıfı */
+.rounded-button {
+  border-radius: 6px !important;
+}
+
+/* Responsive ayarlar */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Animasyonlar */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* Footer link düzeltmeleri */
+footer a {
+  text-decoration: none;
+}
+
+footer ul.text-gray-400 a {
+  color: #9ca3af !important;
+}
+
+footer ul.text-gray-400 a:hover {
+  color: #ffffff !important;
+}
+
+footer p.text-gray-400 {
+  color: #9ca3af !important;
+}
+
+footer .text-gray-400:not(ul) {
+  color: #9ca3af !important;
+}
+
+/* Scroll bar özelleştirmesi */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
