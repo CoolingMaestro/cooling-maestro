@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Tabs,
@@ -23,7 +23,7 @@ interface InternalLoadsLightingProps {
 const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) => {
   const [excludeLighting, setExcludeLighting] = useState<boolean>(false);
   const [lightingType, setLightingType] = useState<"totalWatt" | "lampCount">("totalWatt");
-  const [selectedLampType, setSelectedLampType] = useState<string>("");
+  const [_selectedLampType, _setSelectedLampType] = useState<string>("");
 
   // Initialize form fields
   useEffect(() => {
@@ -32,8 +32,15 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
     });
   }, [form]);
 
+  // Form field watchers
+  const lampType = Form.useWatch('lampType', form);
+  const lightingHoursPerDay = Form.useWatch('lightingHoursPerDay', form);
+  const totalWatt = Form.useWatch('totalWatt', form);
+  const lampCount = Form.useWatch('lampCount', form);
+  const wattPerLamp = Form.useWatch('wattPerLamp', form);
+
   // Watt değerini hesaplama fonksiyonu - ASHRAE Equation (1)
-  const calculateWattage = () => {
+  const calculateWattage = useCallback(() => {
     const lampType = form.getFieldValue("lampType") || "";
     const hoursPerDay = form.getFieldValue("lightingHoursPerDay") || 0;
     
@@ -72,13 +79,13 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
     const dailyFactor = hoursPerDay ? hoursPerDay / 24 : 1;
     
     return Math.round(instantaneousHeatGain * dailyFactor * 100) / 100;
-  };
+  }, [lightingType, form]);
 
   useEffect(() => {
     form.setFieldsValue({
       calculatedWattage: calculateWattage(),
     });
-  }, [lightingType, form.getFieldValue("lampType"), form.getFieldValue("lightingHoursPerDay")]);
+  }, [lightingType, lampType, lightingHoursPerDay, totalWatt, lampCount, wattPerLamp, form, calculateWattage]);
 
   return (
     <Card
@@ -109,7 +116,7 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
               <Tooltip 
                 title={
                   <div style={{ fontSize: '12px' }}>
-                    <strong>ASHRAE'ye göre balast faktörleri:</strong>
+                    <strong>ASHRAE&apos;ye göre balast faktörleri:</strong>
                     <br /><br />
                     <strong>• Floresan:</strong> 1.2 (manyetik balast)<br />
                     Balast kaybı nedeniyle %20 ek güç tüketimi<br /><br />
@@ -141,7 +148,7 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
             placeholder="Lütfen Seçin"
             disabled={excludeLighting}
             onChange={(value) => {
-              setSelectedLampType(value);
+              _setSelectedLampType(value);
               form.setFieldsValue({
                 calculatedWattage: calculateWattage(),
               });
@@ -155,11 +162,11 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
         <Tabs 
         activeKey={lightingType}
         onChange={(key) => setLightingType(key as "totalWatt" | "lampCount")}
-        disabled={excludeLighting}
         items={[
           {
             key: "totalWatt",
             label: "Toplam Watt",
+            disabled: excludeLighting,
             children: (
               <div className="space-y-6 pt-4">
                 <Form.Item
@@ -220,6 +227,7 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
           {
             key: "lampCount",
             label: "Lamba Adedi",
+            disabled: excludeLighting,
             children: (
               <div className="space-y-6 pt-4">
                 <Form.Item

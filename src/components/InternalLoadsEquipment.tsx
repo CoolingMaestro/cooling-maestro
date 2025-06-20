@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Select,
@@ -21,7 +21,7 @@ interface InternalLoadsEquipmentProps {
 
 const InternalLoadsEquipment: React.FC<InternalLoadsEquipmentProps> = ({ form }) => {
   const [excludeEquipment, setExcludeEquipment] = useState<boolean>(false);
-  const [equipmentType, setEquipmentType] = useState<string>("");
+  const [_equipmentType, _setEquipmentType] = useState<string>("");
 
   // Initialize form fields
   useEffect(() => {
@@ -33,8 +33,13 @@ const InternalLoadsEquipment: React.FC<InternalLoadsEquipmentProps> = ({ form })
     });
   }, [form]);
 
+  // Form field watchers
+  const equipmentTotalWatt = Form.useWatch('equipmentTotalWatt', form);
+  const equipmentHoursPerDay = Form.useWatch('equipmentHoursPerDay', form);
+  const equipmentTypeWatch = Form.useWatch('equipmentType', form);
+
   // Ekipman yükünü hesaplama fonksiyonu - ASHRAE standartları
-  const calculateEquipmentLoad = () => {
+  const calculateEquipmentLoad = useCallback(() => {
     const equipmentWatt = form.getFieldValue("equipmentTotalWatt") || 0;
     const hoursPerDay = form.getFieldValue("equipmentHoursPerDay") || 0;
     const equipmentType = form.getFieldValue("equipmentType") || "";
@@ -73,7 +78,7 @@ const InternalLoadsEquipment: React.FC<InternalLoadsEquipmentProps> = ({ form })
       sensible: Math.round(totalLoad * factor.sensibleRatio * 100) / 100,
       latent: Math.round(totalLoad * (1 - factor.sensibleRatio) * 100) / 100
     };
-  };
+  }, [form]);
 
   // Ekipman yükü değiştiğinde form alanlarını güncelle
   useEffect(() => {
@@ -92,10 +97,12 @@ const InternalLoadsEquipment: React.FC<InternalLoadsEquipmentProps> = ({ form })
       });
     }
   }, [
-    form.getFieldValue("equipmentTotalWatt"),
-    form.getFieldValue("equipmentHoursPerDay"),
-    form.getFieldValue("equipmentType"),
-    excludeEquipment
+    equipmentTotalWatt,
+    equipmentHoursPerDay,
+    equipmentTypeWatch,
+    excludeEquipment,
+    calculateEquipmentLoad,
+    form
   ]);
 
   return (
@@ -127,7 +134,7 @@ const InternalLoadsEquipment: React.FC<InternalLoadsEquipmentProps> = ({ form })
               <Tooltip 
                 title={
                   <div style={{ fontSize: '12px' }}>
-                    <strong>ASHRAE'ye göre ekipman kullanım faktörleri:</strong>
+                    <strong>ASHRAE&apos;ye göre ekipman kullanım faktörleri:</strong>
                     <br /><br />
                     <strong>Ofis Ekipmanları:</strong><br />
                     • Bilgisayar (Hafif): %50<br />
@@ -167,7 +174,7 @@ const InternalLoadsEquipment: React.FC<InternalLoadsEquipmentProps> = ({ form })
             placeholder="Lütfen Seçin"
             disabled={excludeEquipment}
             onChange={(value) => {
-              setEquipmentType(value);
+              _setEquipmentType(value);
               const { total, sensible, latent } = calculateEquipmentLoad();
               form.setFieldsValue({
                 calculatedEquipmentTotal: total,

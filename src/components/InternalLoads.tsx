@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Radio,
@@ -30,16 +30,33 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
   const [lightingType, setLightingType] = useState<"totalWatt" | "lampCount">(
     "totalWatt"
   );
-  const [selectedLampType, setSelectedLampType] = useState<string>("");
+  const [_selectedLampType, _setSelectedLampType] = useState<string>("");
   // İnsan bölümü state'i
   const [excludePeople, setExcludePeople] = useState<boolean>(false);
-  const [activityType, setActivityType] = useState<string>("");
+  const [_activityType, _setActivityType] = useState<string>("");
   // Motor bölümü state'i
   const [excludeMotors, setExcludeMotors] = useState<boolean>(false);
-  const [motorLocation, setMotorLocation] = useState<string>("both_inside");
+  const [_motorLocation, _setMotorLocation] = useState<string>("both_inside");
   // Ekipman bölümü state'i
   const [excludeEquipment, setExcludeEquipment] = useState<boolean>(false);
-  const [equipmentType, setEquipmentType] = useState<string>("");
+  const [_equipmentType, _setEquipmentType] = useState<string>("");
+
+  // Form field watchers
+  const lampType = Form.useWatch('lampType', form);
+  const lightingHoursPerDay = Form.useWatch('lightingHoursPerDay', form);
+  const totalWatt = Form.useWatch('totalWatt', form);
+  const lampCount = Form.useWatch('lampCount', form);
+  const wattPerLamp = Form.useWatch('wattPerLamp', form);
+  const peopleCount = Form.useWatch('peopleCount', form);
+  const peopleHoursPerDay = Form.useWatch('peopleHoursPerDay', form);
+  const activityType = Form.useWatch('activityType', form);
+  const motorHP = Form.useWatch('motorHP', form);
+  const motorCount = Form.useWatch('motorCount', form);
+  const motorHoursPerDay = Form.useWatch('motorHoursPerDay', form);
+  const motorLocationWatch = Form.useWatch('motorLocation', form);
+  const equipmentTotalWatt = Form.useWatch('equipmentTotalWatt', form);
+  const equipmentHoursPerDay = Form.useWatch('equipmentHoursPerDay', form);
+  const equipmentTypeWatch = Form.useWatch('equipmentType', form);
 
   // Initialize form fields
   useEffect(() => {
@@ -59,7 +76,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
     });
   }, [form]);
   // Watt değerini hesaplama fonksiyonu - ASHRAE Equation (1)
-  const calculateWattage = () => {
+  const calculateWattage = useCallback(() => {
     const lampType = form.getFieldValue("lampType") || "";
     const hoursPerDay = form.getFieldValue("lightingHoursPerDay") || 0;
     
@@ -98,10 +115,10 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
     const dailyFactor = hoursPerDay ? hoursPerDay / 24 : 1;
     
     return Math.round(instantaneousHeatGain * dailyFactor * 100) / 100;
-  };
+  }, [lightingType, form]);
   
   // Motor yükünü hesaplama fonksiyonu - ASHRAE Equation (2), (3), (4)
-  const calculateMotorLoad = () => {
+  const calculateMotorLoad = useCallback(() => {
     const motorHP = form.getFieldValue("motorHP") || 0;
     const motorCount = form.getFieldValue("motorCount") || 0;
     const hoursPerDay = form.getFieldValue("motorHoursPerDay") || 0;
@@ -144,10 +161,10 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
     
     // 2 ondalık basamağa yuvarla
     return Math.round(motorHeatGain * dailyFactor * 100) / 100;
-  };
+  }, [form]);
 
   // Ekipman yükünü hesaplama fonksiyonu - ASHRAE standartları
-  const calculateEquipmentLoad = () => {
+  const calculateEquipmentLoad = useCallback(() => {
     const equipmentWatt = form.getFieldValue("equipmentTotalWatt") || 0;
     const hoursPerDay = form.getFieldValue("equipmentHoursPerDay") || 0;
     const equipmentType = form.getFieldValue("equipmentType") || "";
@@ -186,10 +203,10 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
       sensible: Math.round(totalLoad * factor.sensibleRatio * 100) / 100,
       latent: Math.round(totalLoad * (1 - factor.sensibleRatio) * 100) / 100
     };
-  };
+  }, [form]);
 
   // İnsan yükünü hesaplama fonksiyonu - ASHRAE Table 1'e göre geliştirilmiş
-  const calculatePeopleLoad = () => {
+  const calculatePeopleLoad = useCallback(() => {
     const peopleCount = form.getFieldValue("peopleCount") || 0;
     const hoursPerDay = form.getFieldValue("peopleHoursPerDay") || 0;
     const activity = form.getFieldValue("activityType") || "";
@@ -240,12 +257,13 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
       latent: Math.round(totalLatentLoad * 100) / 100,
       total: Math.round(totalPeopleLoad * 100) / 100
     };
-  };
+  }, [roomDryBulbTemperature, form]);
+  
   useEffect(() => {
     form.setFieldsValue({
       calculatedWattage: calculateWattage(),
     });
-  }, [lightingType, form.getFieldValue("lampType"), form.getFieldValue("lightingHoursPerDay")]);
+  }, [lightingType, lampType, lightingHoursPerDay, totalWatt, lampCount, wattPerLamp, form, calculateWattage]);
   
   // İnsan yükü değiştiğinde form alanlarını güncelle
   useEffect(() => {
@@ -264,11 +282,13 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
       });
     }
   }, [
-    form.getFieldValue("peopleCount"),
-    form.getFieldValue("peopleHoursPerDay"),
-    form.getFieldValue("activityType"),
+    peopleCount,
+    peopleHoursPerDay,
+    activityType,
     roomDryBulbTemperature,
-    excludePeople
+    excludePeople,
+    calculatePeopleLoad,
+    form
   ]);
   
   // Motor yükü değiştiğinde form alanlarını güncelle
@@ -284,11 +304,13 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
       });
     }
   }, [
-    form.getFieldValue("motorHP"),
-    form.getFieldValue("motorCount"),
-    form.getFieldValue("motorHoursPerDay"),
-    form.getFieldValue("motorLocation"),
-    excludeMotors
+    motorHP,
+    motorCount,
+    motorHoursPerDay,
+    motorLocationWatch,
+    excludeMotors,
+    calculateMotorLoad,
+    form
   ]);
   
   // Ekipman yükü değiştiğinde form alanlarını güncelle
@@ -308,10 +330,12 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
       });
     }
   }, [
-    form.getFieldValue("equipmentTotalWatt"),
-    form.getFieldValue("equipmentHoursPerDay"),
-    form.getFieldValue("equipmentType"),
-    excludeEquipment
+    equipmentTotalWatt,
+    equipmentHoursPerDay,
+    equipmentTypeWatch,
+    excludeEquipment,
+    calculateEquipmentLoad,
+    form
   ]);
   
   return (
@@ -366,7 +390,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
                 <Tooltip 
                   title={
                     <div style={{ fontSize: '12px' }}>
-                      <strong>ASHRAE'ye göre balast faktörleri:</strong>
+                      <strong>ASHRAE&apos;ye göre balast faktörleri:</strong>
                       <br /><br />
                       <strong>• Floresan:</strong> 1.2 (manyetik balast)<br />
                       Balast kaybı nedeniyle %20 ek güç tüketimi<br /><br />
@@ -398,7 +422,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
               placeholder="Lütfen Seçin"
               disabled={excludeLighting}
               onChange={(value) => {
-                setSelectedLampType(value);
+                _setSelectedLampType(value);
                 form.setFieldsValue({
                   calculatedWattage: calculateWattage(),
                 });
@@ -573,7 +597,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
               placeholder="Lütfen Seçin"
               disabled={excludePeople}
               onChange={(value) => {
-                setActivityType(value);
+                _setActivityType(value);
                 const { sensible, latent, total } = calculatePeopleLoad();
                 form.setFieldsValue({
                   calculatedPeopleSensibleLoad: sensible,
@@ -700,7 +724,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
                 <Tooltip 
                   title={
                     <div style={{ fontSize: '12px' }}>
-                      <strong>ASHRAE'ye göre motor ısı yükü hesaplaması:</strong>
+                      <strong>ASHRAE&apos;ye göre motor ısı yükü hesaplaması:</strong>
                       <br /><br />
                       <strong>• Motor ve ekipman içeride:</strong><br />
                       Isı Yükü = Motor Gücü / Verimlilik<br />
@@ -740,7 +764,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
               placeholder="Lütfen Seçin"
               disabled={excludeMotors}
               onChange={(value) => {
-                setMotorLocation(value);
+                _setMotorLocation(value);
                 const motorLoad = calculateMotorLoad();
                 form.setFieldsValue({
                   calculatedMotorLoad: motorLoad,
@@ -860,7 +884,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
                 <Tooltip 
                   title={
                     <div style={{ fontSize: '12px' }}>
-                      <strong>ASHRAE'ye göre ekipman kullanım faktörleri:</strong>
+                      <strong>ASHRAE&apos;ye göre ekipman kullanım faktörleri:</strong>
                       <br /><br />
                       <strong>Ofis Ekipmanları:</strong><br />
                       • Bilgisayar (Hafif): %50<br />
@@ -900,7 +924,7 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
               placeholder="Lütfen Seçin"
               disabled={excludeEquipment}
               onChange={(value) => {
-                setEquipmentType(value);
+                _setEquipmentType(value);
                 const { total, sensible, latent } = calculateEquipmentLoad();
                 form.setFieldsValue({
                   calculatedEquipmentTotal: total,

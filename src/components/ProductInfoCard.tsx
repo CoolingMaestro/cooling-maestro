@@ -7,14 +7,27 @@ import {
   Button,
   Table,
   Tooltip,
+  FormInstance,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { ProductThermalProperty } from "../services/productService";
+import { ColumnsType } from "antd/es/table";
 
 const { Option } = Select;
 
+interface ProductItem {
+  key: string;
+  category: string;
+  product: string;
+  entryTemperature: number;
+  dailyAmount: number;
+  totalCapacity: number;
+  coolingDuration: number;
+  onRemove?: (key: string) => void;
+}
+
 interface ProductInfoCardProps {
-  form: any;
+  form: FormInstance;
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   selectedProduct: string;
@@ -25,8 +38,8 @@ interface ProductInfoCardProps {
   loadingProducts: boolean;
   fetchProductsByCategory: (category: string) => void;
   handleAddProduct: () => void;
-  productList: any[];
-  productColumns: any[];
+  productList: ProductItem[];
+  productColumns: ColumnsType<ProductItem>;
 }
 
 const ProductInfoCard: React.FC<ProductInfoCardProps> = ({

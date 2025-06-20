@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Select,
@@ -20,7 +20,7 @@ interface InternalLoadsPeopleProps {
 
 const InternalLoadsPeople: React.FC<InternalLoadsPeopleProps> = ({ form, roomDryBulbTemperature = 23.9 }) => {
   const [excludePeople, setExcludePeople] = useState<boolean>(false);
-  const [activityType, setActivityType] = useState<string>("");
+  const [_activityType, _setActivityType] = useState<string>("");
 
   // Initialize form fields
   useEffect(() => {
@@ -32,8 +32,13 @@ const InternalLoadsPeople: React.FC<InternalLoadsPeopleProps> = ({ form, roomDry
     });
   }, [form]);
 
+  // Form field watchers
+  const peopleCount = Form.useWatch('peopleCount', form);
+  const peopleHoursPerDay = Form.useWatch('peopleHoursPerDay', form);
+  const activityType = Form.useWatch('activityType', form);
+
   // İnsan yükünü hesaplama fonksiyonu - ASHRAE Table 1'e göre geliştirilmiş
-  const calculatePeopleLoad = () => {
+  const calculatePeopleLoad = useCallback(() => {
     const peopleCount = form.getFieldValue("peopleCount") || 0;
     const hoursPerDay = form.getFieldValue("peopleHoursPerDay") || 0;
     const activity = form.getFieldValue("activityType") || "";
@@ -84,7 +89,7 @@ const InternalLoadsPeople: React.FC<InternalLoadsPeopleProps> = ({ form, roomDry
       latent: Math.round(totalLatentLoad * 100) / 100,
       total: Math.round(totalPeopleLoad * 100) / 100
     };
-  };
+  }, [roomDryBulbTemperature, form]);
 
   // İnsan yükü değiştiğinde form alanlarını güncelle
   useEffect(() => {
@@ -103,11 +108,13 @@ const InternalLoadsPeople: React.FC<InternalLoadsPeopleProps> = ({ form, roomDry
       });
     }
   }, [
-    form.getFieldValue("peopleCount"),
-    form.getFieldValue("peopleHoursPerDay"),
-    form.getFieldValue("activityType"),
+    peopleCount,
+    peopleHoursPerDay,
+    activityType,
     roomDryBulbTemperature,
-    excludePeople
+    excludePeople,
+    calculatePeopleLoad,
+    form
   ]);
 
   return (
@@ -146,7 +153,7 @@ const InternalLoadsPeople: React.FC<InternalLoadsPeopleProps> = ({ form, roomDry
             placeholder="Lütfen Seçin"
             disabled={excludePeople}
             onChange={(value) => {
-              setActivityType(value);
+              _setActivityType(value);
               const { sensible, latent, total } = calculatePeopleLoad();
               form.setFieldsValue({
                 calculatedPeopleSensibleLoad: sensible,

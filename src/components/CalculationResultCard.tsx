@@ -191,7 +191,7 @@ const CalculationResultCard: React.FC<CalculationResultCardProps> = ({
                 <p className="font-semibold">Yüksek İnfiltrasyon Yükü</p>
                 <p className="text-gray-600">
                   İnfiltrasyon yükü toplam yükün %{getPercentage(calculationResult.breakdown.infiltrationLoad)}
-                  'ını oluşturuyor. Hava perdesi veya ön oda kullanımı önerilir.
+                  &apos;ını oluşturuyor. Hava perdesi veya ön oda kullanımı önerilir.
                 </p>
               </div>
             </div>
@@ -204,7 +204,7 @@ const CalculationResultCard: React.FC<CalculationResultCardProps> = ({
                 <p className="font-semibold">Yüksek İletim Yükü</p>
                 <p className="text-gray-600">
                   İletim yükü toplam yükün %{getPercentage(calculationResult.breakdown.transmissionLoad)}
-                  'ını oluşturuyor. Daha iyi yalıtım malzemeleri kullanılması önerilir.
+                  &apos;ını oluşturuyor. Daha iyi yalıtım malzemeleri kullanılması önerilir.
                 </p>
               </div>
             </div>

@@ -28,7 +28,8 @@
       "Bash(pdftotext:*)",
       "Bash(sudo apt-get:*)",
       "Bash(python3:*)",
-      "WebFetch(domain:)"
+      "WebFetch(domain:)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

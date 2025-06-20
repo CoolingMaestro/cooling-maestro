@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Select,
@@ -21,7 +21,7 @@ interface InternalLoadsMotorProps {
 
 const InternalLoadsMotor: React.FC<InternalLoadsMotorProps> = ({ form }) => {
   const [excludeMotors, setExcludeMotors] = useState<boolean>(false);
-  const [motorLocation, setMotorLocation] = useState<string>("both_inside");
+  const [_motorLocation, _setMotorLocation] = useState<string>("both_inside");
 
   // Initialize form fields
   useEffect(() => {
@@ -32,8 +32,14 @@ const InternalLoadsMotor: React.FC<InternalLoadsMotorProps> = ({ form }) => {
     });
   }, [form]);
 
+  // Form field watchers
+  const motorHP = Form.useWatch('motorHP', form);
+  const motorCount = Form.useWatch('motorCount', form);
+  const motorHoursPerDay = Form.useWatch('motorHoursPerDay', form);
+  const motorLocationWatch = Form.useWatch('motorLocation', form);
+
   // Motor yükünü hesaplama fonksiyonu - ASHRAE Equation (2), (3), (4)
-  const calculateMotorLoad = () => {
+  const calculateMotorLoad = useCallback(() => {
     const motorHP = form.getFieldValue("motorHP") || 0;
     const motorCount = form.getFieldValue("motorCount") || 0;
     const hoursPerDay = form.getFieldValue("motorHoursPerDay") || 0;
@@ -76,7 +82,7 @@ const InternalLoadsMotor: React.FC<InternalLoadsMotorProps> = ({ form }) => {
     
     // 2 ondalık basamağa yuvarla
     return Math.round(motorHeatGain * dailyFactor * 100) / 100;
-  };
+  }, [form]);
 
   // Motor yükü değiştiğinde form alanlarını güncelle
   useEffect(() => {
@@ -91,11 +97,13 @@ const InternalLoadsMotor: React.FC<InternalLoadsMotorProps> = ({ form }) => {
       });
     }
   }, [
-    form.getFieldValue("motorHP"),
-    form.getFieldValue("motorCount"),
-    form.getFieldValue("motorHoursPerDay"),
-    form.getFieldValue("motorLocation"),
-    excludeMotors
+    motorHP,
+    motorCount,
+    motorHoursPerDay,
+    motorLocationWatch,
+    excludeMotors,
+    calculateMotorLoad,
+    form
   ]);
 
   return (
@@ -127,7 +135,7 @@ const InternalLoadsMotor: React.FC<InternalLoadsMotorProps> = ({ form }) => {
               <Tooltip 
                 title={
                   <div style={{ fontSize: '12px' }}>
-                    <strong>ASHRAE'ye göre motor ısı yükü hesaplaması:</strong>
+                    <strong>ASHRAE&apos;ye göre motor ısı yükü hesaplaması:</strong>
                     <br /><br />
                     <strong>• Motor ve ekipman içeride:</strong><br />
                     Isı Yükü = Motor Gücü / Verimlilik<br />
@@ -167,7 +175,7 @@ const InternalLoadsMotor: React.FC<InternalLoadsMotorProps> = ({ form }) => {
             placeholder="Lütfen Seçin"
             disabled={excludeMotors}
             onChange={(value) => {
-              setMotorLocation(value);
+              _setMotorLocation(value);
               const motorLoad = calculateMotorLoad();
               form.setFieldsValue({
                 calculatedMotorLoad: motorLoad,

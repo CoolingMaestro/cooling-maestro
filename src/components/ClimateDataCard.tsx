@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Form, Select, Button } from "antd";
+import { Card, Form, Select, Button, FormInstance } from "antd";
 import { EnvironmentOutlined } from "@ant-design/icons";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 
@@ -87,8 +87,22 @@ const iconVariants = {
   }
 };
 
+interface DesignDayHourlyData {
+  hourly: {
+    time: string[];
+    temperature_2m: number[];
+    relative_humidity_2m: number[];
+    windspeed_10m: number[];
+    shortwave_radiation: number[];
+    direct_radiation?: number[];
+    diffuse_radiation?: number[];
+    direct_normal_irradiance?: number[];
+    surface_pressure?: number[];
+  };
+}
+
 interface ClimateDataCardProps {
-  form: any;
+  form: FormInstance;
   provinces: string[];
   districts: string[];
   selectedProvince: string;
@@ -111,7 +125,7 @@ interface ClimateDataCardProps {
     directRadiation?: number;
     diffuseRadiation?: number;
     peakHour?: number;
-    designDayData?: any; // Tasarım günü saatlik verileri
+    designDayData?: DesignDayHourlyData; // Tasarım günü saatlik verileri
   } | null;
 }
 
@@ -617,7 +631,7 @@ const ClimateDataCard: React.FC<ClimateDataCardProps> = ({
               
               <div className="mt-4 text-xs text-gray-500 flex items-center">
                 <i className="fas fa-info-circle mr-1"></i>
-                Veriler OpenMeteo API'den alınmıştır
+                Veriler OpenMeteo API&apos;den alınmıştır
               </div>
             </motion.div>
           )}
