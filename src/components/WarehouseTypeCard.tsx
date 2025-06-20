@@ -1,9 +1,9 @@
 import React from "react";
-import { Card, Form, Input, InputNumber } from "antd";
+import { Card, Form, Input, InputNumber, FormInstance } from "antd";
 import { WarehouseType } from "../services/warehouseService";
 
 interface WarehouseTypeCardProps {
-  form: any;
+  form: FormInstance;
   warehouseTypes: WarehouseType[];
   loadingWarehouseTypes: boolean;
 }

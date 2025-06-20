@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase";
 
 import {
@@ -16,7 +16,6 @@ import {
 } from "@ant-design/icons";
 
 import Footer from "./components/Footer";
-import RoomDimensionsModal from "./components/RoomDimensionsModal";
 import Header from "./components/Header";
 import CalculationTypeCards from "./components/CalculationTypeCards";
 import ProductInfoCard from "./components/ProductInfoCard";
@@ -128,8 +127,6 @@ const App: React.FC = () => {
   const {
     wallInsulation,
     wallDoors,
-    handleWallInsulationChange,
-    handleWallDoorChange,
   } = useWallState();
 
   // Remaining local state
@@ -139,7 +136,6 @@ const App: React.FC = () => {
   const [roomType] = useState<"rectangle" | "L" | "T">(
     "rectangle"
   );
-  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [productCategories, setProductCategories] = useState<string[]>([]);
   const [loadingCategories, setLoadingCategories] = useState<boolean>(true);
   const [products, setProducts] = useState<ProductThermalProperty[]>([]);
@@ -264,7 +260,7 @@ const App: React.FC = () => {
 
 
   // Room dimensions for 3D visualization
-  const [roomDimensions, setRoomDimensions] = useState({
+  const [roomDimensions] = useState({
     width: 8,
     depth: 6,
     height: 3,
@@ -276,7 +272,6 @@ const App: React.FC = () => {
     tDepth: 3,
   });
 
-  const room3DRef = useRef<any>(null);
 
   // Ürün ekleme fonksiyonu
   const handleAddProduct = () => {
@@ -551,7 +546,7 @@ const App: React.FC = () => {
               className="space-y-8"
               onValuesChange={() => {
                 // Form değişikliklerinde yeniden hesaplama tetiklenir
-                setTriggerRecalculation(prev => prev + 1);
+                // setTriggerRecalculation(prev => prev + 1);
               }}
             >
               {/* Step 0: Konum Bilgileri Kartı */}
@@ -652,24 +647,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Oda Boyutları Modal */}
-        <RoomDimensionsModal
-          isModalVisible={isModalVisible}
-          handleCancel={() => setIsModalVisible(false)}
-          handleSave={() => {
-            setIsRoomDimensionsSaved(true);
-            setIsModalVisible(false);
-            message.success('Oda bilgileri başarıyla kaydedildi!');
-          }}
-          roomType={roomType}
-          roomDimensions={roomDimensions}
-          setRoomDimensions={setRoomDimensions}
-          wallInsulation={wallInsulation}
-          handleWallInsulationChange={handleWallInsulationChange}
-          wallDoors={wallDoors}
-          handleWallDoorChange={handleWallDoorChange}
-          room3DRef={room3DRef}
-        />
       </main>
       <Footer />
     </div>
