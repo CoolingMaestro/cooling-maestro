@@ -4,19 +4,13 @@ import {
 Card,
 Button,
 Typography,
-Statistic,
 Table,
 Dropdown,
 Badge,
-Row,
-Col,
 Menu,
 Avatar,
-Tooltip,
 Input,
 Tag,
-Progress,
-Divider
 } from 'antd';
 import {
 HomeOutlined,
@@ -27,9 +21,7 @@ BellOutlined,
 UserOutlined,
 DownOutlined,
 SearchOutlined,
-FileTextOutlined,
 DatabaseOutlined,
-EnvironmentOutlined,
 QuestionCircleOutlined,
 LogoutOutlined,
 AppstoreOutlined,
@@ -37,10 +29,7 @@ BarChartOutlined,
 TeamOutlined,
 CalendarOutlined,
 FileOutlined,
-MoreOutlined,
 ArrowUpOutlined,
-ArrowDownOutlined,
-InfoCircleOutlined
 } from '@ant-design/icons';
 import * as echarts from 'echarts';
 import { Link } from 'react-router-dom';
@@ -48,7 +37,7 @@ import { Link } from 'react-router-dom';
 const { Title, Text } = Typography;
 const App: React.FC = () => {
 const [searchValue, setSearchValue] = useState<string>('');
-const [notificationCount, setNotificationCount] = useState<number>(3);
+const notificationCount = 3;
 // Echarts - Hesaplama Aktivitesi
 useEffect(() => {
 const activityChart = document.getElementById('activity-chart');
@@ -268,7 +257,7 @@ record.statusType === 'processing' ? 'processing' : 'default'
 {
 title: 'Aksiyon',
 key: 'action',
-render: (_: any, record: any) => (
+render: (_: any) => (
 <div className="flex space-x-2">
 <Button type="primary" size="small" className="!rounded-button whitespace-nowrap">
 Devam Et

@@ -393,12 +393,12 @@ const App: React.FC = () => {
       // Wall ID'lerini eşleştir
       // wall1 = front, wall2 = right, wall3 = back, wall4 = left, wall5 = ceiling, wall6 = floor
       const wallInsulationMapped = {
-        front: wallInsulation.wall1,
-        right: wallInsulation.wall2,
-        back: wallInsulation.wall3,
-        left: wallInsulation.wall4,
-        ceiling: wallInsulation.wall5,
-        floor: wallInsulation.wall6,
+        front: wallInsulation.wall1 || { type: '', uValue: 0 },
+        right: wallInsulation.wall2 || { type: '', uValue: 0 },
+        back: wallInsulation.wall3 || { type: '', uValue: 0 },
+        left: wallInsulation.wall4 || { type: '', uValue: 0 },
+        ceiling: wallInsulation.wall5 || { type: '', uValue: 0 },
+        floor: wallInsulation.wall6 || { type: '', uValue: 0 },
       };
 
       // Eksik duvarlar için hata kontrolü
@@ -433,10 +433,10 @@ const App: React.FC = () => {
         buildingLocation,
         wallInsulation: wallInsulationMapped,
         wallDoors: {
-          front: wallDoors.wall1 || { enabled: false },
-          right: wallDoors.wall2 || { enabled: false },
-          back: wallDoors.wall3 || { enabled: false },
-          left: wallDoors.wall4 || { enabled: false },
+          front: typeof wallDoors.wall1 === 'boolean' ? { enabled: wallDoors.wall1 } : (wallDoors.wall1 || { enabled: false }),
+          right: typeof wallDoors.wall2 === 'boolean' ? { enabled: wallDoors.wall2 } : (wallDoors.wall2 || { enabled: false }),
+          back: typeof wallDoors.wall3 === 'boolean' ? { enabled: wallDoors.wall3 } : (wallDoors.wall3 || { enabled: false }),
+          left: typeof wallDoors.wall4 === 'boolean' ? { enabled: wallDoors.wall4 } : (wallDoors.wall4 || { enabled: false }),
         },
         internalLoads: {
           lighting: {
@@ -456,7 +456,7 @@ const App: React.FC = () => {
             hp: formValues.excludeMotors ? 0 : (formValues.motorHP || 0),
             count: formValues.excludeMotors ? 0 : (formValues.motorCount || 0),
             hoursPerDay: formValues.excludeMotors ? 0 : (formValues.motorHoursPerDay || 0),
-            location: formValues.excludeMotors ? undefined : (formValues.motorLocation || 'both_inside'),
+            ...(formValues.excludeMotors ? {} : { location: formValues.motorLocation || 'both_inside' }),
           },
           equipment: {
             exclude: formValues.excludeEquipment === true,

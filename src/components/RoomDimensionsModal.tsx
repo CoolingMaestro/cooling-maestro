@@ -41,8 +41,8 @@ interface RoomDimensionsModalProps {
     tWidth: number;
     tDepth: number;
   }>>;
-  wallInsulation: { [key: string]: string };
-  handleWallInsulationChange: (wall: string, value: string) => void;
+  wallInsulation: { [key: string]: { type: string; uValue: number } | null };
+  handleWallInsulationChange: (wall: string, insulation: { type: string; uValue: number } | null) => void;
   wallDoors: { [key: string]: boolean | { enabled: boolean; width?: number; height?: number; type?: string } };
   handleWallDoorChange: (wall: string, value: boolean | { enabled: boolean; width?: number; height?: number; type?: string }) => void;
   room3DRef: React.RefObject<any>;

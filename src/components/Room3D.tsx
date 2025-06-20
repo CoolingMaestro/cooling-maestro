@@ -12,7 +12,7 @@ interface Room3DProps {
   lDepth?: number;
   tWidth?: number;
   tDepth?: number;
-  wallInsulation?: {[key: string]: string};
+  wallInsulation?: {[key: string]: { type: string; uValue: number } | null};
   wallDoors?: {[key: string]: boolean | { enabled: boolean; width?: number; height?: number; type?: string }};
 }
 
@@ -32,7 +32,7 @@ const Room: React.FC<{
   lDepth?: number;
   tWidth?: number;
   tDepth?: number;
-  wallInsulation?: {[key: string]: string};
+  wallInsulation?: {[key: string]: { type: string; uValue: number } | null};
   wallDoors?: {[key: string]: boolean | { enabled: boolean; width?: number; height?: number; type?: string }};
 }> = ({ 
   roomType, 

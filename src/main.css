@@ -1,7 +1,13 @@
 /* Tailwind CSS direktifleri */
+/** @type {import('tailwindcss').Config} */
+/* stylelint-disable at-rule-no-unknown */
+/* postcss-disable-next-line */
 @tailwind base;
+/* postcss-disable-next-line */
 @tailwind components;
+/* postcss-disable-next-line */
 @tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
 
 /* Ant Design özelleştirmeleri ve global stiller */
 :root {
