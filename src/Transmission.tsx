@@ -2,25 +2,18 @@ import React, { useState, useEffect } from "react";
 import {
   Card,
   Select,
-  Form,
   InputNumber,
-  Tooltip,
-  Space,
   FormInstance,
   Table,
   Button,
   Checkbox,
-  Modal,
-  Radio,
   Alert,
   message,
 } from "antd";
 import { 
-  InfoCircleOutlined, 
   HomeOutlined, 
   DeleteOutlined,
   PlusOutlined,
-  EditOutlined
 } from "@ant-design/icons";
 import { supabase } from "./lib/supabase";
 import { Stage, Layer, Rect, Text, Group } from 'react-konva';
