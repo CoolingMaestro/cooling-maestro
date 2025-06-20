@@ -3,26 +3,22 @@ import { getCoordinates } from "./getCoordinates";
 import { calculateWetBulbTemperature } from "./calculateWetBulbTemperature";
 import { saveCoordinatesToDB } from "../services/coordinatesService";
 import { solAirTemperatureService } from "../services/solAirTemperatureService";
+import { DesignDayData, ClimateData } from "../types/climate.types";
 
 interface ClimateDataParams {
   selectedProvince: string;
   selectedDistrict: string;
   setLoading: (loading: boolean) => void;
-  setClimateData: (data: {
-    maxTemp: number;
-    maxTempDate: string;
-    humidity: number;
-    wetBulbTemp: number;
-    groundTemp: number;
-    pressure: number | null;
-    elevation: number | null;
-    solarRadiation?: number;
-    windSpeed?: string;
-    directRadiation?: number;
-    diffuseRadiation?: number;
-    peakHour?: number;
-    designDayData?: any; // Tasarım günü saatlik verileri
-  } | null) => void;
+  setClimateData: (data: ClimateData | null) => void;
+}
+
+interface DayData {
+  date: string;
+  temperature: number;
+  humidity: number;
+  radiation: number;
+  groundTemp: number;
+  pressure: number | null;
 }
 
 interface DailyLoadData {
@@ -87,7 +83,7 @@ export const fetchClimateData = async ({
       radiation: dailyData.daily.shortwave_radiation_sum[index],
       groundTemp: dailyData.daily.soil_temperature_0_to_7cm_mean[index],
       pressure: dailyData.daily.surface_pressure_mean?.[index],
-    })).filter((day: any) => day.temperature !== null);
+    })).filter((day: DayData) => day.temperature !== null);
 
     // Sıcaklığa göre sırala ve en sıcak 20 günü al
     const hottestDays = [...daysWithData]

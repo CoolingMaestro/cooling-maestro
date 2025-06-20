@@ -22,9 +22,6 @@ export const calculateWetBulbTemperature = (
     throw new Error('Basınç 10 kPa ile 200 kPa arasında olmalıdır');
   }
 
-  // Sabitler
-  const WATER_MOLECULAR_WEIGHT = 18.01528; // g/mol
-  const DRY_AIR_MOLECULAR_WEIGHT = 28.9645; // g/mol
 
   // Doyma buhar basıncını hesapla (kPa)
   const calculateSaturationPressure = (temp: number): number => {

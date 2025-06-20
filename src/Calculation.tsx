@@ -390,7 +390,9 @@ const App: React.FC = () => {
 
       // Hedef sıcaklığı belirle (ilk ürünün optimal saklama sıcaklığı)
       const firstProduct = validProducts[0];
-      const targetTemperature = firstProduct?.thermalProperties 
+      const targetTemperature = firstProduct?.thermalProperties &&
+                              firstProduct.thermalProperties.optimal_storage_temp_min !== null &&
+                              firstProduct.thermalProperties.optimal_storage_temp_max !== null
         ? (firstProduct.thermalProperties.optimal_storage_temp_min + 
            firstProduct.thermalProperties.optimal_storage_temp_max) / 2
         : 0;

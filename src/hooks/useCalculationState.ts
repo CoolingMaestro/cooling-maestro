@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CalculationResult } from "../services/calculationService";
+import { DesignDayData, ClimateData } from "../types/climate.types";
 
 export const useCalculationState = () => {
   const [selectedCalculationType, setSelectedCalculationType] = useState<
@@ -26,45 +27,13 @@ export const useCalculationState = () => {
   };
 };
 
-// Design day data from Open Meteo API
-interface DesignDayData {
-  latitude: number;
-  longitude: number;
-  elevation: number;
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    relative_humidity_2m: number[];
-    windspeed_10m: number[];
-    direct_radiation: number[];
-    diffuse_radiation: number[];
-    direct_normal_irradiance: number[];
-    shortwave_radiation: number[];
-    surface_pressure?: number[];
-  };
-}
-
 export const useLocationState = () => {
   const [selectedProvince, setSelectedProvince] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [provinces, setProvinces] = useState<string[]>([]);
   const [districts, setDistricts] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [climateData, setClimateData] = useState<{
-    maxTemp: number;
-    maxTempDate: string;
-    humidity: number;
-    wetBulbTemp: number;
-    groundTemp: number;
-    pressure: number | null;
-    elevation: number | null;
-    solarRadiation?: number;
-    windSpeed?: string;
-    directRadiation?: number;
-    diffuseRadiation?: number;
-    peakHour?: number;
-    designDayData?: DesignDayData; // Tasarım günü saatlik verileri
-  } | null>(null);
+  const [climateData, setClimateData] = useState<ClimateData | null>(null);
 
   return {
     selectedProvince,

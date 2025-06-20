@@ -4,24 +4,7 @@
 
 import { ProductThermalProperty } from './productService';
 import { solAirTemperatureService } from './solAirTemperatureService';
-
-// Design day data from Open Meteo API
-interface DesignDayData {
-  latitude: number;
-  longitude: number;
-  elevation: number;
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    relative_humidity_2m: number[];
-    windspeed_10m: number[];
-    direct_radiation: number[];
-    diffuse_radiation: number[];
-    direct_normal_irradiance?: number[];
-    shortwave_radiation: number[];
-    surface_pressure?: number[];
-  };
-}
+import { DesignDayData } from '../types/climate.types';
 
 // Sabitler
 const CONSTANTS = {
