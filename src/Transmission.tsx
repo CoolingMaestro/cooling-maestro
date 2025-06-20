@@ -53,6 +53,7 @@ interface WallData {
   load: number;
   width: number;
   height: number;
+  area?: number;
 }
 
 interface DoorData {
@@ -69,15 +70,15 @@ interface DoorData {
 interface RoomDimensions {
   height: number;
   width: number;
-  length: number;
-  location: 'inside' | 'outside';
+  depth: number;
+  location?: 'inside' | 'outside';
 }
 
 const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) => {
   const [roomDimensions, setRoomDimensions] = useState<RoomDimensions>({
     height: 3,
     width: 4,
-    length: 5,
+    depth: 5,
     location: 'inside'
   });
   const [uniformInsulation, setUniformInsulation] = useState(true);
@@ -105,13 +106,22 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
   const [ambientTemp, setAmbientTemp] = useState<number | undefined>(undefined);
   const [outdoorTemp, setOutdoorTemp] = useState<number | undefined>(undefined);
 
-  // Oda boyutları değiştiğinde form'u güncelle
+  // Form'dan oda boyutlarını al
   useEffect(() => {
-    form.setFieldsValue({
-      roomDimensions,
-      uniformInsulation,
-    });
-  }, [roomDimensions, uniformInsulation, form]);
+    const formValues = form.getFieldsValue();
+    if (formValues.roomDimensions) {
+      setRoomDimensions(formValues.roomDimensions);
+    }
+    // Watch for form changes
+    const unsubscribe = form.getInternalHooks('RC_FORM_INTERNAL_HOOKS')?.registerWatch?.(
+      (values: any) => {
+        if (values.roomDimensions) {
+          setRoomDimensions(values.roomDimensions);
+        }
+      }
+    );
+    return () => unsubscribe?.();
+  }, [form]);
 
   // İklim verilerini prop'tan al
   useEffect(() => {
@@ -122,15 +132,40 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     }
   }, [climateData]);
 
+  // Duvar boyutlarından oda boyutlarını hesapla
+  useEffect(() => {
+    const wall1 = wallsData.find(w => w.id === 'wall1');
+    const wall2 = wallsData.find(w => w.id === 'wall2');
+    
+    if (wall1 && wall2) {
+      const newWidth = wall1.width; // Duvar 1'in genişliği = oda genişliği
+      const newDepth = wall2.width; // Duvar 2'nin genişliği = oda derinliği
+      
+      if (newWidth !== roomDimensions.width || newDepth !== roomDimensions.depth) {
+        setRoomDimensions(prev => ({
+          ...prev,
+          width: newWidth,
+          depth: newDepth
+        }));
+      }
+    }
+  }, [wallsData, roomDimensions.width, roomDimensions.depth]);
+
   // Create a dependency key for walls data
   const wallsDataKey = wallsData.map(w => `${w.width}_${w.height}_${w.insulationType}_${w.thickness}_${w.color}_${w.orientation}`).join(',');
 
-  // Automatically recalculate loads when wallsData changes
+  // Automatically recalculate loads and areas when wallsData changes
   useEffect(() => {
     const newWallsData = wallsData.map(wall => {
       const calculated = calculateWallLoad(wall);
+      // Calculate area based on wall type
+      const area = (wall.type === 'floor' || wall.type === 'roof')
+        ? (roomDimensions?.width || 0) * (roomDimensions?.depth || 0)
+        : wall.width * wall.height;
+      
       return {
         ...wall,
+        area: area,
         tdValue: calculated.tdValue,
         uValue: calculated.uValue,
         load: calculated.load
@@ -141,14 +176,15 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     const hasChanged = newWallsData.some((newWall, index) => 
       newWall.load !== wallsData[index].load || 
       newWall.uValue !== wallsData[index].uValue ||
-      newWall.tdValue !== wallsData[index].tdValue
+      newWall.tdValue !== wallsData[index].tdValue ||
+      newWall.area !== wallsData[index].area
     );
     
     if (hasChanged) {
       setWallsData(newWallsData);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wallsDataKey, roomDimensions.location, insulationData, targetIndoorTemp, ambientTemp, outdoorTemp, floorInsulationData]);
+  }, [wallsDataKey, roomDimensions, insulationData, targetIndoorTemp, ambientTemp, outdoorTemp, floorInsulationData]);
 
   // Insulation types, thickness ve color değerlerini veritabanından çek
   useEffect(() => {
@@ -211,17 +247,31 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
   useEffect(() => {
     const fetchFloorInsulationData = async () => {
       try {
+        // Önce tüm surface değerlerini kontrol edelim
+        const { data: allSurfaces, error: surfaceError } = await supabase
+          .from('insulation_types')
+          .select('surface')
+          .order('surface');
+          
+        if (!surfaceError && allSurfaces) {
+          const uniqueSurfaces = [...new Set(allSurfaces.map(item => item.surface))];
+          console.log('Available surfaces:', uniqueSurfaces);
+        }
+
         const { data, error } = await supabase
           .from('insulation_types')
           .select('name, thickness, insulation_color, u_value, solar_absorptance')
-          .eq('surface', 'floor')
+          .or('surface.eq.floor,surface.eq.zemin,surface.eq.Floor,surface.eq.Zemin')
           .order('name');
 
         if (error) throw error;
 
-        if (data) {
+        console.log('Floor insulation data:', data); // Debug log
+
+        if (data && data.length > 0) {
           // Unique insulation types for floor
           const uniqueTypes = [...new Set(data.map(item => item.name))];
+          console.log('Floor insulation types:', uniqueTypes); // Debug log
           setFloorInsulationTypes(uniqueTypes);
 
           // Floor için thickness değerlerini grupla
@@ -254,6 +304,9 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           // Unique color değerlerini al
           const uniqueColors = [...new Set(data.map(item => item.insulation_color).filter(Boolean))];
           setFloorColorOptions(uniqueColors);
+        } else {
+          console.log('No floor insulation data found');
+          message.warning('Zemin izolasyon verileri bulunamadı');
         }
       } catch (error) {
         console.error('Error fetching floor insulation data:', error);
@@ -289,12 +342,22 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     }
     
     // Eğer izolasyon bilgileri eksikse sadece yükü 0 yap, TD'yi değil
-    if (!insulationInfo || !wall.width || !wall.height || !wall.insulationType || !wall.thickness || !wall.color) {
+    if (!insulationInfo || !wall.insulationType || !wall.thickness || !wall.color) {
       return { uValue: 0, load: 0, tdValue: tdValue };
     }
     
-    // Calculate area
-    const area = wall.width * wall.height;
+    // Calculate area based on wall type
+    let area = 0;
+    if (wall.type === 'floor' || wall.type === 'roof') {
+      // For floor and roof, use room dimensions
+      area = (roomDimensions?.width || 0) * (roomDimensions?.depth || 0);
+    } else {
+      // For walls and roof, use width and height
+      if (!wall.width || !wall.height) {
+        return { uValue: 0, load: 0, tdValue: tdValue };
+      }
+      area = wall.width * wall.height;
+    }
     
     // Debug için log ekleyelim
     console.log('TD Calculation Debug:', {
@@ -393,20 +456,48 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       key: 'width',
       width: 120,
       render: (value: number, record: WallData) => (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <InputNumber
-            value={value}
-            min={0.1}
-            step={0.1}
-            style={{ width: '100%' }}
-            onChange={(newValue) => {
-              const newData = wallsData.map(item => 
-                item.id === record.id ? { ...item, width: newValue || 0 } : item
-              );
-              setWallsData(newData);
-            }}
-          />
-        </div>
+        (record.type === 'floor' || record.type === 'roof') ? (
+          <div style={{ textAlign: 'center' }}>-</div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <InputNumber
+              value={value}
+              min={0.1}
+              step={0.1}
+              style={{ width: '100%' }}
+              onChange={(newValue) => {
+                let newData = wallsData.map(item => 
+                  item.id === record.id ? { ...item, width: newValue || 0 } : item
+                );
+                
+                // Karşılıklı duvarları senkronize et
+                if (record.id === 'wall1') {
+                  // Duvar 1 değiştiğinde Duvar 3'ü güncelle
+                  newData = newData.map(item => 
+                    item.id === 'wall3' ? { ...item, width: newValue || 0 } : item
+                  );
+                } else if (record.id === 'wall3') {
+                  // Duvar 3 değiştiğinde Duvar 1'i güncelle
+                  newData = newData.map(item => 
+                    item.id === 'wall1' ? { ...item, width: newValue || 0 } : item
+                  );
+                } else if (record.id === 'wall2') {
+                  // Duvar 2 değiştiğinde Duvar 4'ü güncelle
+                  newData = newData.map(item => 
+                    item.id === 'wall4' ? { ...item, width: newValue || 0 } : item
+                  );
+                } else if (record.id === 'wall4') {
+                  // Duvar 4 değiştiğinde Duvar 2'yi güncelle
+                  newData = newData.map(item => 
+                    item.id === 'wall2' ? { ...item, width: newValue || 0 } : item
+                  );
+                }
+                
+                setWallsData(newData);
+              }}
+            />
+          </div>
+        )
       ),
     },
     {
@@ -415,21 +506,42 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       key: 'height',
       width: 120,
       render: (value: number, record: WallData) => (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <InputNumber
-            value={value}
-            min={0.1}
-            step={0.1}
-            style={{ width: '100%' }}
-            onChange={(newValue) => {
-              const newData = wallsData.map(item => 
-                item.id === record.id ? { ...item, height: newValue || 0 } : item
-              );
-              setWallsData(newData);
-            }}
-          />
-        </div>
+        (record.type === 'floor' || record.type === 'roof') ? (
+          <div style={{ textAlign: 'center' }}>-</div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <InputNumber
+              value={value}
+              min={0.1}
+              step={0.1}
+              style={{ width: '100%' }}
+              onChange={(newValue) => {
+                let newData = wallsData.map(item => 
+                  item.id === record.id ? { ...item, height: newValue || 0 } : item
+                );
+                
+                // Tüm duvarlar aynı yüksekliğe sahip olmalı
+                if (record.type === 'wall') {
+                  newData = newData.map(item => 
+                    item.type === 'wall' ? { ...item, height: newValue || 0 } : item
+                  );
+                }
+                
+                setWallsData(newData);
+              }}
+            />
+          </div>
+        )
       ),
+    },
+    {
+      title: <div style={{ textAlign: 'center' }}>Alan (m²)</div>,
+      dataIndex: 'area',
+      key: 'area',
+      width: 100,
+      render: (_: unknown, record: WallData) => {
+        return <div style={{ textAlign: 'center' }}>{(record.area || 0).toFixed(2)}</div>;
+      },
     },
     {
       title: <div style={{ textAlign: 'center' }}>İzolasyon</div>,
