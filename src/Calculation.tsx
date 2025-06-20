@@ -25,7 +25,7 @@ import ClimateDataCard from "./components/ClimateDataCard";
 import Transmission from "./Transmission";
 import DetailedCalculationSteps from "./components/DetailedCalculationSteps";
 import CalculationResultCard from "./components/CalculationResultCard";
-import InternalLoads from "./components/InternalLoads";
+import InternalLoadsWizard from "./components/InternalLoadsWizard";
 import Infiltration from "./components/Infiltration";
 import { productService, ProductThermalProperty } from "./services/productService";
 import { fetchClimateData } from "./utils/fetchClimateData";
@@ -581,7 +581,7 @@ const App: React.FC = () => {
 
               {/* Step 2: İç Yükler */}
               {currentStep === 2 && (
-                <InternalLoads 
+                <InternalLoadsWizard 
                   form={form} 
                   roomDryBulbTemperature={form.getFieldValue('indoorTemperature') || 23.9} 
                 />
