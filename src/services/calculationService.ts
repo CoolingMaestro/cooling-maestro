@@ -91,6 +91,7 @@ export interface CalculationInput {
     indoorTemperature?: number; // Bina içi sıcaklık
     indoorHumidity?: number; // Bina içi nem
     designDayData?: any; // Tasarım günü saatlik verileri
+    maxTempDate?: string; // Maksimum sıcaklık tarihi
   };
   
   // Ürün bilgileri
@@ -621,39 +622,68 @@ class CalculationService {
       });
       
       // 1. Duyulur ısı hesapla
-      if (entryTemperature > thermalProperties.freezing_point && targetTemp > thermalProperties.freezing_point) {
-        // Donma noktası üzerinde
-        const deltaT = entryTemperature - targetTemp;
-        const specificHeat = thermalProperties.specific_heat_above_freezing;
-        const heat = massFlowRate * specificHeat * deltaT;
-        sensibleHeat += heat * CONSTANTS.KJ_H_TO_W;
-        console.log('Above freezing heat:', heat);
-      } else if (entryTemperature > thermalProperties.freezing_point && targetTemp < thermalProperties.freezing_point) {
-        // Donma noktasını geçiyor
-        // Önce donma noktasına kadar soğut
-        const deltaT1 = entryTemperature - thermalProperties.freezing_point;
-        const heat1 = massFlowRate * thermalProperties.specific_heat_above_freezing * deltaT1;
-        
-        // Donma noktasından hedef sıcaklığa
-        const deltaT2 = thermalProperties.freezing_point - targetTemp;
-        const heat2 = massFlowRate * thermalProperties.specific_heat_below_freezing * deltaT2;
-        
-        const totalHeat = (heat1 + heat2) * CONSTANTS.KJ_H_TO_W;
-        sensibleHeat += totalHeat;
-        console.log('Crossing freezing point heat:', { heat1, heat2, totalHeat });
+      if (
+        thermalProperties.freezing_point !== null &&
+        thermalProperties.freezing_point !== undefined
+      ) {
+        if (entryTemperature > thermalProperties.freezing_point && targetTemp > thermalProperties.freezing_point) {
+          // Donma noktası üzerinde
+          const deltaT = entryTemperature - targetTemp;
+          const specificHeat = thermalProperties.specific_heat_above_freezing ?? 1;
+          const safeSpecificHeat = specificHeat ?? 1;
+          const heat = massFlowRate * safeSpecificHeat * deltaT;
+          sensibleHeat += heat * CONSTANTS.KJ_H_TO_W;
+          console.log('Above freezing heat:', heat);
+        } else if (entryTemperature > thermalProperties.freezing_point && targetTemp < thermalProperties.freezing_point) {
+          // Donma noktasını geçiyor
+          // Önce donma noktasına kadar soğut
+          const deltaT1 = entryTemperature - thermalProperties.freezing_point;
+          const specificHeatAbove = thermalProperties.specific_heat_above_freezing;
+          const specificHeatBelow = thermalProperties.specific_heat_below_freezing;
+          
+          if (!specificHeatAbove || !specificHeatBelow) {
+            console.warn('Missing specific heat values for product crossing freezing point');
+            return;
+          }
+          
+          const heat1 = massFlowRate * specificHeatAbove * deltaT1;
+          
+          // Donma noktasından hedef sıcaklığa
+          const deltaT2 = thermalProperties.freezing_point - targetTemp;
+          const heat2 = massFlowRate * specificHeatBelow * deltaT2;
+          
+          const totalHeat = (heat1 + heat2) * CONSTANTS.KJ_H_TO_W;
+          sensibleHeat += totalHeat;
+          console.log('Crossing freezing point heat:', { heat1, heat2, totalHeat });
+        } else {
+          // Donma noktası altında
+          const deltaT = entryTemperature - targetTemp;
+          const specificHeat = thermalProperties.specific_heat_below_freezing;
+          
+          if (!specificHeat) {
+            console.warn('Missing specific_heat_below_freezing for product below freezing point');
+            return;
+          }
+          
+          const heat = massFlowRate * specificHeat * deltaT;
+          sensibleHeat += heat * CONSTANTS.KJ_H_TO_W;
+          console.log('Below freezing heat:', heat);
+        }
       } else {
-        // Donma noktası altında
-        const deltaT = entryTemperature - targetTemp;
-        const specificHeat = thermalProperties.specific_heat_below_freezing;
-        const heat = massFlowRate * specificHeat * deltaT;
-        sensibleHeat += heat * CONSTANTS.KJ_H_TO_W;
-        console.log('Below freezing heat:', heat);
+        console.warn('thermalProperties.freezing_point is null or undefined, skipping sensible heat calculation for this product.');
       }
       
       // 2. Gizli ısı hesapla (donma için)
-      if (entryTemperature > thermalProperties.freezing_point && targetTemp < thermalProperties.freezing_point) {
-        const waterContent = thermalProperties.water_content / 100; // Yüzde olarak
-        const latentHeatValue = massFlowRate * thermalProperties.latent_heat_of_fusion * waterContent;
+      if (
+        thermalProperties.freezing_point !== null &&
+        thermalProperties.freezing_point !== undefined &&
+        thermalProperties.latent_heat_fusion !== null &&
+        thermalProperties.latent_heat_fusion !== undefined &&
+        entryTemperature > thermalProperties.freezing_point &&
+        targetTemp < thermalProperties.freezing_point
+      ) {
+        const waterContent = (thermalProperties.water_content ?? 0) / 100; // Yüzde olarak
+        const latentHeatValue = massFlowRate * thermalProperties.latent_heat_fusion * waterContent;
         latentHeat += latentHeatValue * CONSTANTS.KJ_H_TO_W;
         console.log('Latent heat:', latentHeatValue);
       }
@@ -716,16 +746,17 @@ class CalculationService {
       
       if (activityData) {
         // Oda sıcaklığına göre düzeltme faktörü
-        const roomTemp = internalLoads.people.roomTemperature || 23.9; // Varsayılan 23.9°C
-        let sensibleHeat = activityData.sensible;
-        let latentHeat = activityData.latent;
+        // const roomTemp = internalLoads.people.roomTemperature || 23.9; // Varsayılan 23.9°C
         
         // 26.7°C için duyulur ısı %20 azaltılır (ASHRAE Note 1)
-        if (roomTemp >= 26.7) {
-          const adjustment = 0.8; // %20 azaltma
-          sensibleHeat = activityData.sensible * adjustment;
-          latentHeat = activityData.total - sensibleHeat; // Toplam ısı aynı kalır
-        }
+        // Şu anda toplam ısı kullanılıyor, gelecekte duyulur/gizli ayrımı yapılabilir
+        // const roomTemp = internalLoads.people.roomTemperature || 23.9;
+        // let sensibleHeat = activityData.sensible;
+        // if (roomTemp >= 26.7) {
+        //   const adjustment = 0.8; // %20 azaltma
+        //   sensibleHeat = activityData.sensible * adjustment;
+        //   latentHeat = activityData.total - sensibleHeat;
+        // }
         
         // Toplam insan yükü
         people = internalLoads.people.count * activityData.total * dailyFactor;
@@ -841,7 +872,7 @@ class CalculationService {
       
       // Hava değişim oranı hesaplaması
       // Saatte ortalama kapı açık kalma oranı
-      const openRatio = dailyUsageHours > 0 ? totalOpenHours / dailyUsageHours : 0;
+      // const openRatio = dailyUsageHours > 0 ? totalOpenHours / dailyUsageHours : 0; // Şu anda kullanılmıyor
       
       // ASHRAE'ye göre kapı açıklığından infiltrasyon
       // Formül: V_inf = A_door × v_air × Dt × Df × (1 - E)
