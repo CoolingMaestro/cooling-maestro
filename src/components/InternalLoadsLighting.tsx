@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Card,
-  Radio,
+  Tabs,
   Select,
   Form,
   InputNumber,
@@ -102,27 +102,6 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
       className="shadow-md hover:shadow-lg transition-shadow duration-300"
     >
       <div className="space-y-6">
-        <div className="mb-4">
-          <Radio.Group
-            value={lightingType}
-            onChange={(e) => setLightingType(e.target.value)}
-            disabled={excludeLighting}
-            className="flex flex-wrap gap-4"
-          >
-            <Radio.Button
-              value="totalWatt"
-              className="!rounded-button whitespace-nowrap px-4 py-2"
-            >
-              Toplam Watt
-            </Radio.Button>
-            <Radio.Button
-              value="lampCount"
-              className="!rounded-button whitespace-nowrap px-4 py-2"
-            >
-              Lamba Adedi
-            </Radio.Button>
-          </Radio.Group>
-        </div>
         <Form.Item
           label={
             <span>
@@ -173,132 +152,155 @@ const InternalLoadsLighting: React.FC<InternalLoadsLightingProps> = ({ form }) =
             <Option value="led">LED</Option>
           </Select>
         </Form.Item>
-        {lightingType === "totalWatt" ? (
-          <>
-            <Form.Item
-              label="Toplam (Watt)"
-              name="totalWatt"
-              rules={[
-                {
-                  required: !excludeLighting,
-                  message: "Lütfen toplam watt değerini giriniz",
-                },
-              ]}
-            >
-              <InputNumber
-                min={0}
-                className="w-full"
-                disabled={excludeLighting}
-                onChange={() => {
-                  form.setFieldsValue({
-                    calculatedWattage: calculateWattage(),
-                  });
-                }}
-                addonAfter="W"
-              />
-            </Form.Item>
-            <Form.Item
-              label="Saat/gün"
-              name="lightingHoursPerDay"
-              rules={[
-                {
-                  required: !excludeLighting,
-                  message: "Lütfen günlük çalışma saatini giriniz",
-                },
-              ]}
-            >
-              <InputNumber
-                min={0}
-                max={24}
-                className="w-full"
-                disabled={excludeLighting}
-                onChange={() => {
-                  form.setFieldsValue({
-                    calculatedWattage: calculateWattage(),
-                  });
-                }}
-                addonAfter="saat"
-              />
-            </Form.Item>
-          </>
-        ) : (
-          <>
-            <Form.Item
-              label="Watt"
-              name="wattPerLamp"
-              rules={[
-                {
-                  required: !excludeLighting,
-                  message: "Lütfen lamba başına watt değerini giriniz",
-                },
-              ]}
-            >
-              <InputNumber
-                min={0}
-                className="w-full"
-                disabled={excludeLighting}
-                onChange={() => {
-                  form.setFieldsValue({
-                    calculatedWattage: calculateWattage(),
-                  });
-                }}
-                addonAfter="W"
-              />
-            </Form.Item>
-            <Form.Item
-              label="Lamba Adedi"
-              name="lampCount"
-              rules={[
-                {
-                  required: !excludeLighting,
-                  message: "Lütfen lamba adedini giriniz",
-                },
-              ]}
-            >
-              <InputNumber
-                min={0}
-                className="w-full"
-                disabled={excludeLighting}
-                onChange={() => {
-                  form.setFieldsValue({
-                    calculatedWattage: calculateWattage(),
-                  });
-                }}
-                addonAfter="adet"
-              />
-            </Form.Item>
-            <Form.Item
-              label="Saat/gün"
-              name="lightingHoursPerDay"
-              rules={[
-                {
-                  required: !excludeLighting,
-                  message: "Lütfen günlük çalışma saatini giriniz",
-                },
-              ]}
-            >
-              <InputNumber
-                min={0}
-                max={24}
-                className="w-full"
-                disabled={excludeLighting}
-                onChange={() => {
-                  form.setFieldsValue({
-                    calculatedWattage: calculateWattage(),
-                  });
-                }}
-                addonAfter="saat"
-              />
-            </Form.Item>
-          </>
-        )}
-        <Form.Item label="Yük (Watt)" name="calculatedWattage">
-          <InputNumber
-            disabled
-            className="w-full bg-gray-50"
-            addonAfter="W"
-          />
-        </Form.Item>
+        <Tabs 
+        activeKey={lightingType}
+        onChange={(key) => setLightingType(key as "totalWatt" | "lampCount")}
+        disabled={excludeLighting}
+        items={[
+          {
+            key: "totalWatt",
+            label: "Toplam Watt",
+            children: (
+              <div className="space-y-6 pt-4">
+                <Form.Item
+                  label="Toplam (Watt)"
+                  name="totalWatt"
+                  rules={[
+                    {
+                      required: !excludeLighting && lightingType === "totalWatt",
+                      message: "Lütfen toplam watt değerini giriniz",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    className="w-full"
+                    disabled={excludeLighting}
+                    onChange={() => {
+                      form.setFieldsValue({
+                        calculatedWattage: calculateWattage(),
+                      });
+                    }}
+                    addonAfter="W"
+                  />
+                </Form.Item>
+                <Form.Item
+                  label="Saat/gün"
+                  name="lightingHoursPerDay"
+                  rules={[
+                    {
+                      required: !excludeLighting,
+                      message: "Lütfen günlük çalışma saatini giriniz",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={24}
+                    className="w-full"
+                    disabled={excludeLighting}
+                    onChange={() => {
+                      form.setFieldsValue({
+                        calculatedWattage: calculateWattage(),
+                      });
+                    }}
+                    addonAfter="saat"
+                  />
+                </Form.Item>
+                <Form.Item label="Yük (Watt)" name="calculatedWattage">
+                  <InputNumber
+                    disabled
+                    className="w-full bg-gray-50"
+                    addonAfter="W"
+                  />
+                </Form.Item>
+              </div>
+            ),
+          },
+          {
+            key: "lampCount",
+            label: "Lamba Adedi",
+            children: (
+              <div className="space-y-6 pt-4">
+                <Form.Item
+                  label="Watt"
+                  name="wattPerLamp"
+                  rules={[
+                    {
+                      required: !excludeLighting && lightingType === "lampCount",
+                      message: "Lütfen lamba başına watt değerini giriniz",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    className="w-full"
+                    disabled={excludeLighting}
+                    onChange={() => {
+                      form.setFieldsValue({
+                        calculatedWattage: calculateWattage(),
+                      });
+                    }}
+                    addonAfter="W"
+                  />
+                </Form.Item>
+                <Form.Item
+                  label="Lamba Adedi"
+                  name="lampCount"
+                  rules={[
+                    {
+                      required: !excludeLighting && lightingType === "lampCount",
+                      message: "Lütfen lamba adedini giriniz",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    className="w-full"
+                    disabled={excludeLighting}
+                    onChange={() => {
+                      form.setFieldsValue({
+                        calculatedWattage: calculateWattage(),
+                      });
+                    }}
+                    addonAfter="adet"
+                  />
+                </Form.Item>
+                <Form.Item
+                  label="Saat/gün"
+                  name="lightingHoursPerDay"
+                  rules={[
+                    {
+                      required: !excludeLighting,
+                      message: "Lütfen günlük çalışma saatini giriniz",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={24}
+                    className="w-full"
+                    disabled={excludeLighting}
+                    onChange={() => {
+                      form.setFieldsValue({
+                        calculatedWattage: calculateWattage(),
+                      });
+                    }}
+                    addonAfter="saat"
+                  />
+                </Form.Item>
+                <Form.Item label="Yük (Watt)" name="calculatedWattage">
+                  <InputNumber
+                    disabled
+                    className="w-full bg-gray-50"
+                    addonAfter="W"
+                  />
+                </Form.Item>
+              </div>
+            ),
+          },
+        ]}
+      />
       </div>
     </Card>
   );

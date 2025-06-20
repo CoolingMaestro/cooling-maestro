@@ -173,6 +173,8 @@ export interface CalculationInput {
     openCloseDuration?: number;
     doorOpenDuration?: number;
     dailyDoorUsageDuration?: number;
+    doorWidth?: number;
+    doorHeight?: number;
     // Manuel giriş için
     airFlow?: number;
   };
@@ -611,12 +613,29 @@ class CalculationService {
     
     // Hava değişim oranını belirle
     if (infiltration.method === 'airChange') {
-      // Kullanım yoğunluğuna göre
-      if (infiltration.anteRoom === 'with') {
-        airChangeRate = infiltration.usage === 'heavy' ? 2.5 : 1.5;
+      // ASHRAE Table 13.1 - Soğuk depo hava değişim oranları
+      // Sıcaklık aralığına göre ayarla
+      let baseRate = 0;
+      
+      if (targetTemperature > 0) {
+        // Soğuk oda (0°C üzeri)
+        if (infiltration.anteRoom === 'with') {
+          baseRate = infiltration.usage === 'heavy' ? 3.0 : 2.0;
+        } else {
+          baseRate = infiltration.usage === 'heavy' ? 6.0 : 4.0;
+        }
       } else {
-        airChangeRate = infiltration.usage === 'heavy' ? 4.0 : 2.5;
+        // Dondurucu oda (0°C altı)
+        if (infiltration.anteRoom === 'with') {
+          baseRate = infiltration.usage === 'heavy' ? 2.0 : 1.0;
+        } else {
+          baseRate = infiltration.usage === 'heavy' ? 4.0 : 2.5;
+        }
       }
+      
+      // Hacim faktörü (küçük odalar için artırım)
+      const volumeFactor = volume < 100 ? 1.5 : volume < 500 ? 1.2 : 1.0;
+      airChangeRate = baseRate * volumeFactor;
     } else if (infiltration.method === 'doorOpening') {
       // Kapı açılışlarına göre hesapla
       const doorPassages = infiltration.doorPassCount || 0;
@@ -631,11 +650,31 @@ class CalculationService {
       // Saatte ortalama kapı açık kalma oranı
       const openRatio = dailyUsageHours > 0 ? totalOpenHours / dailyUsageHours : 0;
       
-      // Temel hava değişim oranı (kapı tam açıkken)
-      const baseAirChange = infiltration.anteRoom === 'with' ? 2.0 : 4.0;
+      // ASHRAE'ye göre kapı açıklığından infiltrasyon
+      // Formül: V_inf = A_door × v_air × Dt × Df × (1 - E)
+      // A_door: Kapı alanı (m²)
+      // v_air: Hava hızı (m/s) - tipik 0.5-1.0 m/s
+      // Dt: Sıcaklık farkı faktörü
+      // Df: Yoğunluk farkı faktörü
+      // E: Etkinlik faktörü (ön oda varsa 0.5, yoksa 0)
       
-      // Gerçek hava değişim oranı (açık kalma oranına göre)
-      airChangeRate = openRatio * baseAirChange;
+      // Kapı boyutları (kullanıcı girişi veya varsayılan)
+      const doorHeight = infiltration.doorHeight || 2.5; // m
+      const doorWidth = infiltration.doorWidth || 2.0; // m
+      const doorArea = doorHeight * doorWidth;
+      
+      // Hava hızı (m/s) - sıcaklık farkına bağlı
+      const tempDiff = Math.abs(climateData.maxTemperature - targetTemperature);
+      const airVelocity = 0.223 * Math.sqrt(doorHeight * tempDiff / 283); // ASHRAE formülü
+      
+      // Etkinlik faktörü
+      const effectiveness = infiltration.anteRoom === 'with' ? 0.5 : 0;
+      
+      // Toplam infiltrasyon hacmi (m³)
+      const totalInfiltrationVolume = doorArea * airVelocity * totalOpenHours * 3600 * (1 - effectiveness);
+      
+      // Hava değişim oranı
+      airChangeRate = (totalInfiltrationVolume / volume) / dailyUsageHours;
     } else if (infiltration.method === 'manualEntry') {
       // Manuel hava debisi girişi
       const airFlow = infiltration.airFlow || 0; // m³/saat

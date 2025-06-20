@@ -17,12 +17,14 @@ interface InternalLoadsWizardProps {
   form: FormInstance;
   roomDryBulbTemperature?: number;
   onComplete?: () => void;
+  onBack?: () => void;
 }
 
 const InternalLoadsWizard: React.FC<InternalLoadsWizardProps> = ({ 
   form, 
   roomDryBulbTemperature = 23.9,
-  onComplete 
+  onComplete,
+  onBack 
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -54,7 +56,11 @@ const InternalLoadsWizard: React.FC<InternalLoadsWizardProps> = ({
   };
 
   const prev = () => {
-    setCurrentStep(currentStep - 1);
+    if (currentStep === 0 && onBack) {
+      onBack();
+    } else {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   const handleComplete = () => {
@@ -83,7 +89,6 @@ const InternalLoadsWizard: React.FC<InternalLoadsWizardProps> = ({
 
       <div className="flex justify-between mt-8">
         <Button
-          disabled={currentStep === 0}
           onClick={prev}
         >
           Önceki

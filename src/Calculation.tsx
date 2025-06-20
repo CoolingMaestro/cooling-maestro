@@ -584,6 +584,8 @@ const App: React.FC = () => {
                 <InternalLoadsWizard 
                   form={form} 
                   roomDryBulbTemperature={form.getFieldValue('indoorTemperature') || 23.9} 
+                  onComplete={() => setCurrentStep(3)}
+                  onBack={() => setCurrentStep(1)}
                 />
               )}
 
@@ -629,7 +631,7 @@ const App: React.FC = () => {
                 <CalculationResultCard calculationResult={calculationResult} />
               )}
 
-              {currentStep < 6 && (
+              {currentStep < 6 && currentStep !== 2 && (
                 <div className="flex justify-center gap-4 mt-8">
                   <Button
                     size="large"
