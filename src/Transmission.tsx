@@ -881,7 +881,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
                     style={{ width: 120 }}
                     min={-50}
                     max={50}
-                    step={0.1}
+                    step={1}
                     value={targetIndoorTemp}
                     onChange={(value) => setTargetIndoorTemp(value ?? undefined)}
                     placeholder="°C"
@@ -912,7 +912,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
                     style={{ width: 120 }}
                     min={-50}
                     max={50}
-                    step={0.1}
+                    step={1}
                     value={targetIndoorTemp}
                     onChange={(value) => setTargetIndoorTemp(value ?? undefined)}
                     placeholder="°C"
@@ -925,7 +925,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
                     style={{ width: 120 }}
                     min={-50}
                     max={50}
-                    step={0.1}
+                    step={5}
                     value={ambientTemp}
                     onChange={(value) => setAmbientTemp(value ?? undefined)}
                     placeholder="°C"
