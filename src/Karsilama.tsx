@@ -22,12 +22,10 @@ const { Option } = Select;
 
 interface KarsilamaProps {
   onStartCalculation?: () => void;
-  onLogin?: () => void;
 }
 
 const Karsilama: React.FC<KarsilamaProps> = ({
   onStartCalculation,
-  onLogin,
 }) => {
   const [form] = Form.useForm();
   // Örnek demo hesaplama formu için state
@@ -36,13 +34,6 @@ const Karsilama: React.FC<KarsilamaProps> = ({
   const [productType, setProductType] = useState<string>("meyve");
   const [showDemoResult, setShowDemoResult] = useState<boolean>(false);
   // Sektör referansları için state
-  const sectors = [
-    { name: "Gıda", icon: "fa-apple-alt" },
-    { name: "Lojistik", icon: "fa-truck" },
-    { name: "Et", icon: "fa-drumstick-bite" },
-    { name: "Süt", icon: "fa-cheese" },
-    { name: "İlaç", icon: "fa-pills" },
-  ];
   // Müşteri referansları
   const customers = [
     {

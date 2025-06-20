@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Descriptions, Progress, Statistic, Row, Col, Divider } from "antd";
+import { Card, Descriptions, Progress, Statistic, Row, Col } from "antd";
 import { CalculationResult } from "../services/calculationService";
 
 interface CalculationResultCardProps {

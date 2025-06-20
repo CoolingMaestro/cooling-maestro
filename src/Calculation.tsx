@@ -20,7 +20,6 @@ import RoomDimensionsModal from "./components/RoomDimensionsModal";
 import Header from "./components/Header";
 import CalculationTypeCards from "./components/CalculationTypeCards";
 import ProductInfoCard from "./components/ProductInfoCard";
-import RoomDimensionsCard from "./components/RoomDimensionsCard";
 import ClimateDataCard from "./components/ClimateDataCard";
 import Transmission from "./Transmission";
 import DetailedCalculationSteps from "./components/DetailedCalculationSteps";
@@ -134,20 +133,18 @@ const App: React.FC = () => {
   } = useWallState();
 
   // Remaining local state
-  const [buildingLocation, setBuildingLocation] = useState<
+  const [buildingLocation] = useState<
     "inside" | "outside"
   >("inside");
-  const [roomType, setRoomType] = useState<"rectangle" | "L" | "T">(
+  const [roomType] = useState<"rectangle" | "L" | "T">(
     "rectangle"
   );
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [isRoomDimensionsSaved, setIsRoomDimensionsSaved] = useState<boolean>(false);
   const [productCategories, setProductCategories] = useState<string[]>([]);
   const [loadingCategories, setLoadingCategories] = useState<boolean>(true);
   const [products, setProducts] = useState<ProductThermalProperty[]>([]);
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
   const [productThermalProperties, setProductThermalProperties] = useState<Map<string, ProductThermalProperty>>(new Map());
-  const [triggerRecalculation, setTriggerRecalculation] = useState(0);
 
   // Fetch provinces from database
   useEffect(() => {
