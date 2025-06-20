@@ -30,6 +30,12 @@ interface WallInsulationProps {
     groundTemp: number;
     pressure: number | null;
     elevation: number | null;
+    solarRadiation?: number;
+    windSpeed?: string;
+    directRadiation?: number;
+    diffuseRadiation?: number;
+    peakHour?: number;
+    designDayData?: any; // Tasarım günü saatlik verileri
   } | null;
 }
 
@@ -652,14 +658,14 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
   // Kapı tablosu kolonları
   const doorColumns = [
     {
-      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Wall *</span></div>,
+      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Duvar *</span></div>,
       dataIndex: 'wall',
       key: 'wall',
       render: (text: string, record: DoorData) => (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Select
             value={text}
-            placeholder="[Please Select]"
+            placeholder="[Lütfen Seçiniz]"
             style={{ width: '100%' }}
             onChange={(value) => {
               const newData = doorsData.map(item => 
@@ -668,23 +674,23 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
               setDoorsData(newData);
             }}
           >
-            <Option value="Wall1">Wall1</Option>
-            <Option value="Wall2">Wall2</Option>
-            <Option value="Wall3">Wall3</Option>
-            <Option value="Wall4">Wall4</Option>
+            <Option value="Wall1">Duvar 1</Option>
+            <Option value="Wall2">Duvar 2</Option>
+            <Option value="Wall3">Duvar 3</Option>
+            <Option value="Wall4">Duvar 4</Option>
           </Select>
         </div>
       ),
     },
     {
-      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Door Type *</span></div>,
+      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Kapı Tipi *</span></div>,
       dataIndex: 'doorType',
       key: 'doorType',
       render: (text: string, record: DoorData) => (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Select
             value={text}
-            placeholder="[Please Select]"
+            placeholder="[Lütfen Seçiniz]"
             style={{ width: '100%' }}
             onChange={(value) => {
               const newData = doorsData.map(item => 
@@ -693,16 +699,16 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
               setDoorsData(newData);
             }}
           >
-            <Option value="Single Glass">Single Glass</Option>
-            <Option value="Double Glass">Double Glass</Option>
-            <Option value="Insulated">Insulated</Option>
-            <Option value="Non-Glass">Non-Glass</Option>
+            <Option value="Single Glass">Tek Cam</Option>
+            <Option value="Double Glass">Çift Cam</Option>
+            <Option value="Insulated">Yalıtımlı</Option>
+            <Option value="Non-Glass">Camsız</Option>
           </Select>
         </div>
       ),
     },
     {
-      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Quantity *</span></div>,
+      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Adet *</span></div>,
       dataIndex: 'quantity',
       key: 'quantity',
       render: (value: number, record: DoorData) => (
@@ -722,7 +728,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       ),
     },
     {
-      title: <div style={{ textAlign: 'center' }}>Height (m)</div>,
+      title: <div style={{ textAlign: 'center' }}>Yükseklik (m)</div>,
       dataIndex: 'height',
       key: 'height',
       render: (value: number, record: DoorData) => (
@@ -743,7 +749,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       ),
     },
     {
-      title: <div style={{ textAlign: 'center' }}>Width (m)</div>,
+      title: <div style={{ textAlign: 'center' }}>Genişlik (m)</div>,
       dataIndex: 'width',
       key: 'width',
       render: (value: number, record: DoorData) => (
@@ -1105,7 +1111,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           {/* Toplam Yük */}
           <div className="flex justify-end">
             <div className="bg-gray-100 px-4 py-2 rounded">
-              <span className="font-medium">Load (Watt): </span>
+              <span className="font-medium">Yük (Watt): </span>
               <span className="text-blue-600 font-bold text-lg">{totalWallLoad.toFixed(2)}</span>
             </div>
           </div>
@@ -1116,14 +1122,14 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       <Card
         title={
           <div className="flex items-center justify-between">
-            <span className="text-lg font-medium">Doors</span>
+            <span className="text-lg font-medium">Kapılar</span>
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={addDoor}
               className="bg-teal-600 hover:bg-teal-700 border-teal-600"
             >
-              Add Door
+              Kapı Ekle
             </Button>
           </div>
         }
@@ -1143,8 +1149,8 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           <Alert
             message={
               <div>
-                <strong>Note :</strong> Non-Glass Door assumes that it uses the same insulation and thickness type as the chosen wall. 
-                Hence, load is already included in the wall load calculation.
+                Camsız kapılar için ayrıca ısı yükü hesaplaması yapılmamaktadır. Program, camsız kapıyı içinde
+                bulunduğu duvarın bir parçası olarak kabul ediyor ve duvar hesabına otomatik olarak dahil ediyor.
               </div>
             }
             type="info"
@@ -1155,12 +1161,34 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           {/* Kapı Toplam Yük */}
           <div className="flex justify-end">
             <div className="bg-gray-100 px-4 py-2 rounded">
-              <span className="font-medium">Load (Watt): </span>
+              <span className="font-medium">Yük (Watt): </span>
               <span className="text-red-600 font-bold text-lg">{totalDoorLoad.toFixed(2)}</span>
             </div>
           </div>
         </div>
       </Card>
+
+      {/* ASHRAE Uyumluluk Bilgisi */}
+      {roomDimensions.location === 'outside' && (
+        <Alert
+          message="Basit Hesaplama Yöntemi"
+          description={
+            <div>
+              Bu hesaplama basitleştirilmiş yöntem kullanmaktadır. Detaylı hesaplama seçeneğinde:
+              <ul className="list-disc list-inside mt-2">
+                <li>ASHRAE sol-air sıcaklık yöntemi</li>
+                <li>Gerçek güneş radyasyonu verileri</li>
+                <li>Saatlik rüzgar hızı verileri</li>
+                <li>Yön bazında güneş yükü hesabı</li>
+              </ul>
+              kullanılarak daha doğru sonuçlar elde edilir.
+            </div>
+          }
+          type="warning"
+          showIcon
+          className="border-l-4 border-l-yellow-500 mt-4"
+        />
+      )}
 
     </div>
   );

@@ -1,7 +1,9 @@
 // Soğutma Yükü Hesaplama Servisi
 // Bu servis tüm soğutma yükü hesaplamalarını içerir
+// ASHRAE 2021 Fundamentals standardına göre güncellenmiştir
 
 import { ProductThermalProperty } from './productService';
+import { solAirTemperatureService } from './solAirTemperatureService';
 
 // Sabitler
 const CONSTANTS = {
@@ -88,6 +90,7 @@ export interface CalculationInput {
     elevation?: number | null;
     indoorTemperature?: number; // Bina içi sıcaklık
     indoorHumidity?: number; // Bina içi nem
+    designDayData?: any; // Tasarım günü saatlik verileri
   };
   
   // Ürün bilgileri
@@ -330,17 +333,186 @@ class CalculationService {
     }
   }
   
-  // İletim yükü hesaplama - Güvenli değer kontrolü
+  // İletim yükü hesaplama - ASHRAE Sol-Air Sıcaklık Yöntemi
   private calculateTransmissionLoad(input: CalculationInput): CalculationResult['details']['transmission'] {
     const { roomDimensions, roomType, wallInsulation, wallDoors, climateData, targetTemperature, buildingLocation } = input;
     
-    // Sıcaklık farkını hesapla
-    const outsideTemp = buildingLocation === 'outside' 
-      ? climateData.maxTemperature 
-      : (climateData.indoorTemperature || 25); // Bina içi için kullanıcının girdiği değer veya varsayılan
+    // Tasar<bm günü verisi varsa kullan, yoksa basit hesaplama yap
+    const useDetailedCalculation = buildingLocation === 'outside' && climateData.designDayData;
+    
+    // Bina içi için basit sıcaklık farkı
+    if (buildingLocation === 'inside') {
+      const ambientTemp = climateData.indoorTemperature || 25;
+      const deltaT = ambientTemp - targetTemperature;
+      
+      // Duvar alanlarını hesapla
+      const areas = this.calculateWallAreas(roomDimensions, roomType);
+      
+      let walls = 0;
+      let doors = 0;
+      
+      // Her duvar için ısı transferini hesapla
+      (['front', 'back', 'left', 'right'] as const).forEach(wall => {
+        const wallArea = areas[wall];
+        let netWallArea = wallArea;
+        
+        // Kapı varsa alanını çıkar
+        if (wallDoors[wall]?.enabled && wallDoors[wall].width && wallDoors[wall].height) {
+          const doorArea = wallDoors[wall].width! * wallDoors[wall].height!;
+          netWallArea = Math.max(0, wallArea - doorArea);
+          
+          // Kapı ısı transferi
+          const doorUValue = wallDoors[wall].uValue || 3.5;
+          doors += doorUValue * doorArea * deltaT;
+        }
+        
+        // Duvar ısı transferi
+        const wallUValue = wallInsulation[wall]?.uValue || 0.5;
+        walls += wallUValue * netWallArea * deltaT;
+      });
+      
+      // Tavan ısı transferi
+      const ceilingArea = areas.ceiling;
+      const ceilingUValue = wallInsulation.ceiling?.uValue || 0.5;
+      const ceiling = ceilingUValue * ceilingArea * deltaT;
+      
+      // Zemin ısı transferi
+      const floorArea = areas.floor;
+      const floorUValue = wallInsulation.floor?.uValue || 0.5;
+      const floorDeltaT = climateData.groundTemperature - targetTemperature;
+      const floor = floorUValue * floorArea * floorDeltaT;
+      
+      const result = {
+        walls: isNaN(walls) ? 0 : Math.abs(walls),
+        ceiling: isNaN(ceiling) ? 0 : Math.abs(ceiling),
+        floor: isNaN(floor) ? 0 : Math.abs(floor),
+        doors: isNaN(doors) ? 0 : Math.abs(doors),
+        total: 0
+      };
+      
+      result.total = result.walls + result.ceiling + result.floor + result.doors;
+      return result;
+    }
+    
+    // Bina dışı için ASHRAE Sol-Air sıcaklık yöntemi
+    if (useDetailedCalculation && climateData.designDayData) {
+      // Saatlik verilerden pik saati belirle
+      const hourlyData = climateData.designDayData.hourly;
+      const peakHour = this.findPeakLoadHour(hourlyData, targetTemperature);
+      
+      // Pik saatteki değerleri kullan
+      const outdoorTemp = hourlyData.temperature_2m[peakHour];
+      const windSpeed = hourlyData.windspeed_10m[peakHour] || 3;
+      const solarRadiation = hourlyData.shortwave_radiation[peakHour] || 0;
+      const directNormal = hourlyData.direct_normal_irradiance?.[peakHour] || 0;
+      const diffuseHorizontal = hourlyData.diffuse_radiation?.[peakHour] || 0;
+      
+      // Duvar alanlarını hesapla
+      const areas = this.calculateWallAreas(roomDimensions, roomType);
+      
+      let walls = 0;
+      let doors = 0;
+      
+      // Güneş açılarını hesapla (basitleştirilmiş)
+      const solarAngles = solAirTemperatureService.calculateSolarAngles(
+        climateData.elevation || 40, // Varsayılan enlem
+        30, // Varsayılan boylam
+        new Date(`${climateData.maxTempDate}T${peakHour.toString().padStart(2, '0')}:00:00`)
+      );
+      
+      // Her duvar için sol-air sıcaklık ve ısı transferi hesapla
+      const wallOrientations = {
+        front: 180,  // Güney
+        back: 0,     // Kuzey
+        left: 90,    // Doğu
+        right: 270   // Batı
+      };
+      
+      (['front', 'back', 'left', 'right'] as const).forEach(wall => {
+        const wallArea = areas[wall];
+        let netWallArea = wallArea;
+        
+        // Kapı varsa alanını çıkar
+        if (wallDoors[wall]?.enabled && wallDoors[wall].width && wallDoors[wall].height) {
+          const doorArea = wallDoors[wall].width! * wallDoors[wall].height!;
+          netWallArea = Math.max(0, wallArea - doorArea);
+          
+          // Kapı için basit hesaplama (sol-air yerine dış sıcaklık)
+          const doorUValue = wallDoors[wall].uValue || 3.5;
+          const doorDeltaT = outdoorTemp - targetTemperature;
+          doors += doorUValue * doorArea * doorDeltaT;
+        }
+        
+        // Duvar için sol-air sıcaklık hesapla
+        const wallRadiation = solAirTemperatureService.calculateWallSolarRadiation({
+          directNormalIrradiance: directNormal,
+          diffuseHorizontalIrradiance: diffuseHorizontal,
+          globalHorizontalIrradiance: solarRadiation,
+          solarAltitude: solarAngles.altitude,
+          solarAzimuth: solarAngles.azimuth,
+          wallAzimuth: wallOrientations[wall]
+        });
+        
+        const solAirTemp = solAirTemperatureService.calculateSolAirTemperature({
+          outdoorTemp: outdoorTemp,
+          solarRadiation: wallRadiation,
+          surfaceAbsorptance: 0.7, // Tipik değer, ileride veritabanından alınabilir
+          windSpeed: windSpeed,
+          surfaceType: 'vertical'
+        });
+        
+        const wallUValue = wallInsulation[wall]?.uValue || 0.5;
+        const wallDeltaT = solAirTemp - targetTemperature;
+        walls += wallUValue * netWallArea * wallDeltaT;
+      });
+      
+      // Tavan için sol-air sıcaklık hesapla
+      const ceilingArea = areas.ceiling;
+      const ceilingUValue = wallInsulation.ceiling?.uValue || 0.5;
+      
+      const roofSolAirTemp = solAirTemperatureService.calculateSolAirTemperature({
+        outdoorTemp: outdoorTemp,
+        solarRadiation: solarRadiation, // Yatay yüzey için doğrudan GHI kullan
+        surfaceAbsorptance: 0.8, // Çatı için tipik değer
+        windSpeed: windSpeed,
+        surfaceType: 'horizontal'
+      });
+      
+      const ceilingDeltaT = roofSolAirTemp - targetTemperature;
+      const ceiling = ceilingUValue * ceilingArea * ceilingDeltaT;
+      
+      // Zemin ısı transferi (sol-air kullanmaya gerek yok)
+      const floorArea = areas.floor;
+      const floorUValue = wallInsulation.floor?.uValue || 0.5;
+      const floorDeltaT = climateData.groundTemperature - targetTemperature;
+      const floor = floorUValue * floorArea * floorDeltaT;
+      
+      const result = {
+        walls: isNaN(walls) ? 0 : Math.abs(walls),
+        ceiling: isNaN(ceiling) ? 0 : Math.abs(ceiling),
+        floor: isNaN(floor) ? 0 : Math.abs(floor),
+        doors: isNaN(doors) ? 0 : Math.abs(doors),
+        total: 0
+      };
+      
+      result.total = result.walls + result.ceiling + result.floor + result.doors;
+      
+      console.log('Sol-air temperature calculation details:', {
+        peakHour,
+        outdoorTemp,
+        roofSolAirTemp,
+        windSpeed,
+        solarRadiation
+      });
+      
+      return result;
+    }
+    
+    // Tasarım günü verisi yoksa basit hesaplama
+    const outsideTemp = climateData.maxTemperature;
     const deltaT = outsideTemp - targetTemperature;
     
-    console.log('Temperature difference calculation:', {
+    console.log('Simple temperature difference calculation:', {
       buildingLocation,
       outsideTemp,
       targetTemperature,
@@ -353,7 +525,7 @@ class CalculationService {
     let walls = 0;
     let doors = 0;
     
-    // Her duvar için ısı transferini hesapla - Güvenli U değeri
+    // Her duvar için ısı transferini hesapla
     (['front', 'back', 'left', 'right'] as const).forEach(wall => {
       const wallArea = areas[wall];
       let netWallArea = wallArea;
@@ -361,15 +533,15 @@ class CalculationService {
       // Kapı varsa alanını çıkar
       if (wallDoors[wall]?.enabled && wallDoors[wall].width && wallDoors[wall].height) {
         const doorArea = wallDoors[wall].width! * wallDoors[wall].height!;
-        netWallArea = Math.max(0, wallArea - doorArea); // Negatif olmayacak şekilde
+        netWallArea = Math.max(0, wallArea - doorArea);
         
         // Kapı ısı transferi
-        const doorUValue = wallDoors[wall].uValue || 3.5; // Varsayılan U değeri
+        const doorUValue = wallDoors[wall].uValue || 3.5;
         doors += doorUValue * doorArea * deltaT;
       }
       
-      // Duvar ısı transferi - Güvenli U değeri
-      const wallUValue = wallInsulation[wall]?.uValue || 0.5; // Varsayılan değer
+      // Duvar ısı transferi
+      const wallUValue = wallInsulation[wall]?.uValue || 0.5;
       walls += wallUValue * netWallArea * deltaT;
     });
     
@@ -378,14 +550,14 @@ class CalculationService {
     const ceilingUValue = wallInsulation.ceiling?.uValue || 0.5;
     const ceiling = ceilingUValue * ceilingArea * deltaT;
     
-    // Zemin ısı transferi (zemin sıcaklığı farklı)
+    // Zemin ısı transferi
     const floorArea = areas.floor;
     const floorUValue = wallInsulation.floor?.uValue || 0.5;
     const floorDeltaT = climateData.groundTemperature - targetTemperature;
     const floor = floorUValue * floorArea * floorDeltaT;
     
     const result = {
-      walls: isNaN(walls) ? 0 : Math.abs(walls), // Negatif değerleri pozitif yap
+      walls: isNaN(walls) ? 0 : Math.abs(walls),
       ceiling: isNaN(ceiling) ? 0 : Math.abs(ceiling),
       floor: isNaN(floor) ? 0 : Math.abs(floor),
       doors: isNaN(doors) ? 0 : Math.abs(doors),
@@ -397,6 +569,27 @@ class CalculationService {
     console.log('Transmission load breakdown:', result);
     
     return result;
+  }
+  
+  // Pik yük saatini bul
+  private findPeakLoadHour(hourlyData: any, targetTemp: number): number {
+    let maxLoad = 0;
+    let peakHour = 14; // Varsayılan öğleden sonra
+    
+    for (let hour = 0; hour < 24; hour++) {
+      const temp = hourlyData.temperature_2m[hour];
+      const radiation = hourlyData.shortwave_radiation?.[hour] || 0;
+      
+      // Basitleştirilmiş yük skoru
+      const loadScore = (temp - targetTemp) + (radiation * 0.01);
+      
+      if (loadScore > maxLoad) {
+        maxLoad = loadScore;
+        peakHour = hour;
+      }
+    }
+    
+    return peakHour;
   }
   
   // Ürün yükü hesaplama

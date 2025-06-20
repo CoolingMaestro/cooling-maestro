@@ -106,6 +106,12 @@ interface ClimateDataCardProps {
     groundTemp: number;
     pressure: number | null;
     elevation: number | null;
+    solarRadiation?: number;
+    windSpeed?: string;
+    directRadiation?: number;
+    diffuseRadiation?: number;
+    peakHour?: number;
+    designDayData?: any; // Tasarım günü saatlik verileri
   } | null;
 }
 
@@ -258,7 +264,7 @@ const ClimateDataCard: React.FC<ClimateDataCardProps> = ({
             >
               <h4 className="text-xl font-semibold text-blue-800 mb-4 flex items-center">
                 <i className="fas fa-history mr-2"></i>
-                Son 5 Yıl İçerisindeki İklim Verileri
+                {selectedProvince} {selectedDistrict} İklim Verileri
               </h4>
               <motion.div 
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
@@ -333,8 +339,7 @@ const ClimateDataCard: React.FC<ClimateDataCardProps> = ({
                   <AnimatedNumber value={climateData.humidity} suffix="%" />
                 </motion.div>
                 <div className="text-xs text-gray-500 mt-2">
-                  En yüksek sıcaklığın görüldüğü tarihteki ortalama
-                  nem
+                  Tasarım günü pik saatindeki nem
                 </div>
               </motion.div>
 
@@ -369,7 +374,7 @@ const ClimateDataCard: React.FC<ClimateDataCardProps> = ({
                   <AnimatedNumber value={climateData.wetBulbTemp} suffix="°C" />
                 </motion.div>
                 <div className="text-xs text-gray-500 mt-2">
-                  Sıcaklık ve bağıl neme göre hesaplanan değer
+                  Tasarım günü pik saatindeki değer
                 </div>
               </motion.div>
 
@@ -485,7 +490,131 @@ const ClimateDataCard: React.FC<ClimateDataCardProps> = ({
                     : "API'den veri alınamadı"}
                 </div>
               </motion.div>
+
+              {climateData.solarRadiation !== undefined && (
+                <motion.div 
+                  className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg cursor-pointer"
+                  variants={cardVariants}
+                  whileHover="hover"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-gray-600 font-medium">
+                      Güneş Radyasyonu
+                    </div>
+                    <motion.i 
+                      className="fas fa-sun text-yellow-500 text-xl"
+                      animate={{ 
+                        rotate: 360,
+                        transition: {
+                          duration: 8,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }
+                      }}
+                    />
+                  </div>
+                  <motion.div 
+                    className="text-2xl font-bold text-yellow-700"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.9, type: "spring", stiffness: 200 }}
+                  >
+                    <AnimatedNumber value={climateData.solarRadiation} suffix=" W/m²" />
+                  </motion.div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Pik saatteki toplam radyasyon
+                  </div>
+                </motion.div>
+              )}
+
+              {climateData.windSpeed !== undefined && (
+                <motion.div 
+                  className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg cursor-pointer"
+                  variants={cardVariants}
+                  whileHover="hover"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-gray-600 font-medium">
+                      Rüzgar Hızı
+                    </div>
+                    <motion.i 
+                      className="fas fa-wind text-sky-500 text-xl"
+                      animate={{ 
+                        x: [-5, 5, -5],
+                        transition: {
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }
+                      }}
+                    />
+                  </div>
+                  <motion.div 
+                    className="text-2xl font-bold text-sky-700"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 1.0, type: "spring", stiffness: 200 }}
+                  >
+                    {climateData.windSpeed} m/s
+                  </motion.div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    10m yükseklikteki rüzgar hızı
+                  </div>
+                </motion.div>
+              )}
               </motion.div>
+              
+              {/* Tasarım Günü Detayları */}
+              <motion.div
+                className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+              >
+                <div className="flex items-center mb-3">
+                  <i className="fas fa-calendar-check text-indigo-600 mr-2"></i>
+                  <h5 className="text-lg font-semibold text-indigo-800">Tasarım Günü Seçimi</h5>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-start">
+                    <i className="fas fa-database text-indigo-500 mr-2 mt-1"></i>
+                    <div>
+                      <span className="font-medium text-gray-700">Veri Periyodu:</span>
+                      <span className="text-gray-600 ml-1">Son 10 yıl</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <i className="fas fa-percentage text-indigo-500 mr-2 mt-1"></i>
+                    <div>
+                      <span className="font-medium text-gray-700">Tasarım Kriteri:</span>
+                      <span className="text-gray-600 ml-1">%1 aşılma sıklığı</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <i className="fas fa-sun text-indigo-500 mr-2 mt-1"></i>
+                    <div>
+                      <span className="font-medium text-gray-700">Seçim Yöntemi:</span>
+                      <span className="text-gray-600 ml-1">Maksimum soğutma yükü</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <i className="fas fa-chart-line text-indigo-500 mr-2 mt-1"></i>
+                    <div>
+                      <span className="font-medium text-gray-700">Analiz:</span>
+                      <span className="text-gray-600 ml-1">Sol-air sıcaklık hesabı</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-indigo-200">
+                  <div className="flex items-center text-xs text-indigo-600">
+                    <i className="fas fa-award mr-1"></i>
+                    <span className="font-medium">ASHRAE 2021 Fundamentals Chapter 18 standardına uygun</span>
+                  </div>
+                </div>
+              </motion.div>
+              
               <div className="mt-4 text-xs text-gray-500 flex items-center">
                 <i className="fas fa-info-circle mr-1"></i>
                 Veriler OpenMeteo API'den alınmıştır

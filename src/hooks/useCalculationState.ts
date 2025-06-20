@@ -39,6 +39,12 @@ export const useLocationState = () => {
     groundTemp: number;
     pressure: number | null;
     elevation: number | null;
+    solarRadiation?: number;
+    windSpeed?: string;
+    directRadiation?: number;
+    diffuseRadiation?: number;
+    peakHour?: number;
+    designDayData?: any; // Tasarım günü saatlik verileri
   } | null>(null);
 
   return {
