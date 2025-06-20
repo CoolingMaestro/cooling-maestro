@@ -79,12 +79,6 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     length: 5,
     location: 'inside'
   });
-  const [wallOrientations, setWallOrientations] = useState({
-    wall1: 'internal',
-    wall2: 'internal', 
-    wall3: 'internal',
-    wall4: 'internal'
-  });
   const [uniformInsulation, setUniformInsulation] = useState(true);
   const [selectedRoomType, setSelectedRoomType] = useState<string>('');
   const [wallsData, setWallsData] = useState<WallData[]>([
@@ -114,10 +108,9 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
   useEffect(() => {
     form.setFieldsValue({
       roomDimensions,
-      wallOrientations,
       uniformInsulation,
     });
-  }, [roomDimensions, wallOrientations, uniformInsulation, form]);
+  }, [roomDimensions, uniformInsulation, form]);
 
   // İklim verilerini prop'tan al
   useEffect(() => {
@@ -189,7 +182,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           });
 
           // Thickness değerlerini sırala
-          thicknessMap.forEach((values, key) => {
+          thicknessMap.forEach((values) => {
             values.sort((a, b) => a - b);
           });
 
@@ -246,7 +239,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           });
 
           // Thickness değerlerini sırala
-          thicknessMap.forEach((values, key) => {
+          thicknessMap.forEach((values) => {
             values.sort((a, b) => a - b);
           });
 
@@ -265,15 +258,6 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
 
     fetchFloorInsulationData();
   }, []);
-
-  // Orientation değişikliği
-  const handleOrientationChange = (wall: string, value: string) => {
-    setWallOrientations(prev => ({
-      ...prev,
-      [wall]: value
-    }));
-  };
-
 
   // Tek bir duvar için yük hesaplama fonksiyonu
   const calculateWallLoad = (wall: WallData) => {
@@ -330,7 +314,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     // Add solar radiation if room is outside building
     if (roomDimensions.location === 'outside' && wall.type === 'wall') {
       // Solar radiation factors based on orientation
-      const solarFactors = {
+      const solarFactors: Record<string, number> = {
         'north': 0.3,   // Less solar exposure
         'south': 1.0,   // Maximum solar exposure
         'east': 0.7,    // Morning sun
@@ -576,7 +560,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
               
               // Eğer bir duvar yönü belirlendiyse, diğer duvarları otomatik ayarla
               if (value !== 'internal' && record.type === 'wall') {
-                const wallMap = {
+                const wallMap: Record<string, Record<string, Record<string, string>>> = {
                   'wall1': { 'north': { wall2: 'west', wall3: 'south', wall4: 'east' },
                              'south': { wall2: 'east', wall3: 'north', wall4: 'west' },
                              'east': { wall2: 'north', wall3: 'west', wall4: 'south' },
@@ -788,7 +772,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     {
       title: '',
       key: 'action',
-      render: (_, record: DoorData) => (
+      render: (_: any, record: DoorData) => (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Button
             type="text"
