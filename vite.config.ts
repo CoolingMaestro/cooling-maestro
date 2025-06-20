@@ -33,8 +33,8 @@ export default defineConfig({
         target: 'https://nominatim.openstreetmap.org',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/nominatim/, ''),
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
             // Set proper headers for Nominatim
             proxyReq.setHeader('User-Agent', 'CoolingMaestro/1.0 (Contact: your-email@example.com)');
             proxyReq.setHeader('Referer', 'http://localhost:3000');
