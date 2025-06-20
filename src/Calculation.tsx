@@ -37,6 +37,18 @@ import {
 
 const { Title, Text } = Typography;
 
+// Product record interface
+interface ProductRecord {
+  key: string;
+  category: string;
+  product: string;
+  entryTemperature: number;
+  dailyAmount: number;
+  totalCapacity: number;
+  coolingDuration: number;
+  onRemove?: (key: string) => void;
+}
+
 // Ürün tablosu sütunları
 const productColumns = [
   {
@@ -72,7 +84,7 @@ const productColumns = [
   {
     title: "İşlem",
     key: "action",
-    render: (_text: string, record: any) => (
+    render: (_text: string, record: ProductRecord) => (
       <Button
         type="text"
         danger
@@ -164,6 +176,7 @@ const App: React.FC = () => {
     };
 
     fetchProvinces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -329,7 +342,7 @@ const App: React.FC = () => {
     if (col.key === 'action') {
       return {
         ...col,
-        render: (_text: string, record: any) => (
+        render: (_text: string, record: ProductRecord) => (
           <Button
             type="text"
             danger

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { PostgrestError } from '@supabase/postgrest-js';
 
 export interface ProductThermalProperty {
   id: number;
@@ -25,7 +26,7 @@ export interface ProductThermalProperty {
 }
 
 export const productService = {
-  async getProductCategories(): Promise<{ data: string[] | null; error: any }> {
+  async getProductCategories(): Promise<{ data: string[] | null; error: PostgrestError | Error | null }> {
     try {
       const { data, error } = await supabase
         .from('product_thermal_properties')
@@ -44,11 +45,11 @@ export const productService = {
       return { data: uniqueCategories, error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
     }
   },
 
-  async getProductsByCategory(category: string): Promise<{ data: ProductThermalProperty[] | null; error: any }> {
+  async getProductsByCategory(category: string): Promise<{ data: ProductThermalProperty[] | null; error: PostgrestError | Error | null }> {
     try {
       const { data, error } = await supabase
         .from('product_thermal_properties')
@@ -65,11 +66,11 @@ export const productService = {
       return { data, error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
     }
   },
 
-  async getProductByName(productName: string): Promise<{ data: ProductThermalProperty | null; error: any }> {
+  async getProductByName(productName: string): Promise<{ data: ProductThermalProperty | null; error: PostgrestError | Error | null }> {
     try {
       const { data, error } = await supabase
         .from('product_thermal_properties')
@@ -86,7 +87,7 @@ export const productService = {
       return { data, error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
     }
   }
 };

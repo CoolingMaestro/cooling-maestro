@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { PostgrestError } from '@supabase/postgrest-js';
 
 export interface WarehouseType {
   id: number;
@@ -19,7 +20,7 @@ export interface WarehouseType {
 }
 
 export const warehouseService = {
-  async getWarehouseTypes(): Promise<{ data: WarehouseType[] | null; error: any }> {
+  async getWarehouseTypes(): Promise<{ data: WarehouseType[] | null; error: PostgrestError | Error | null }> {
     try {
       const { data, error } = await supabase
         .from('warehouse_types')
@@ -35,11 +36,11 @@ export const warehouseService = {
       return { data, error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
     }
   },
 
-  async getWarehouseTypeByCode(typeCode: string): Promise<{ data: WarehouseType | null; error: any }> {
+  async getWarehouseTypeByCode(typeCode: string): Promise<{ data: WarehouseType | null; error: PostgrestError | Error | null }> {
     try {
       const { data, error } = await supabase
         .from('warehouse_types')
@@ -56,7 +57,7 @@ export const warehouseService = {
       return { data, error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
     }
   }
 };

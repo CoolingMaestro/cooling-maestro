@@ -25,7 +25,6 @@ export const calculateWetBulbTemperature = (
   // Sabitler
   const WATER_MOLECULAR_WEIGHT = 18.01528; // g/mol
   const DRY_AIR_MOLECULAR_WEIGHT = 28.9645; // g/mol
-  const RATIO = WATER_MOLECULAR_WEIGHT / DRY_AIR_MOLECULAR_WEIGHT; // 0.62198
 
   // Doyma buhar basıncını hesapla (kPa)
   const calculateSaturationPressure = (temp: number): number => {

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { PostgrestError } from '@supabase/postgrest-js';
 
 export interface InsulationType {
   id: number;
@@ -10,7 +11,7 @@ export interface InsulationType {
 }
 
 export const insulationService = {
-  async getInsulationTypes(): Promise<{ data: InsulationType[] | null; error: any }> {
+  async getInsulationTypes(): Promise<{ data: InsulationType[] | null; error: PostgrestError | Error | null }> {
     try {
       const { data, error } = await supabase
         .from('insulation_types')
@@ -27,11 +28,11 @@ export const insulationService = {
       return { data, error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
     }
   },
 
-  async getDoorInsulationTypes(): Promise<{ data: InsulationType[] | null; error: any }> {
+  async getDoorInsulationTypes(): Promise<{ data: InsulationType[] | null; error: PostgrestError | Error | null }> {
     try {
       const { data, error } = await supabase
         .from('insulation_types')
@@ -47,7 +48,7 @@ export const insulationService = {
       return { data, error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
     }
   }
 };

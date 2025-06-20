@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CalculationResult } from "../services/calculationService";
 
 export const useCalculationState = () => {
   const [selectedCalculationType, setSelectedCalculationType] = useState<
@@ -6,7 +7,7 @@ export const useCalculationState = () => {
   >(null);
   const [showCalculationForm, setShowCalculationForm] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [calculationResult, setCalculationResult] = useState<any>(null);
+  const [calculationResult, setCalculationResult] = useState<CalculationResult | null>(null);
 
   const handleStepChange = (step: number) => {
     setCurrentStep(step);
@@ -24,6 +25,24 @@ export const useCalculationState = () => {
     setCalculationResult,
   };
 };
+
+// Design day data from Open Meteo API
+interface DesignDayData {
+  latitude: number;
+  longitude: number;
+  elevation: number;
+  hourly: {
+    time: string[];
+    temperature_2m: number[];
+    relative_humidity_2m: number[];
+    windspeed_10m: number[];
+    direct_radiation: number[];
+    diffuse_radiation: number[];
+    direct_normal_irradiance: number[];
+    shortwave_radiation: number[];
+    surface_pressure?: number[];
+  };
+}
 
 export const useLocationState = () => {
   const [selectedProvince, setSelectedProvince] = useState<string>("");
@@ -44,7 +63,7 @@ export const useLocationState = () => {
     directRadiation?: number;
     diffuseRadiation?: number;
     peakHour?: number;
-    designDayData?: any; // Tasarım günü saatlik verileri
+    designDayData?: DesignDayData; // Tasarım günü saatlik verileri
   } | null>(null);
 
   return {
@@ -63,10 +82,22 @@ export const useLocationState = () => {
   };
 };
 
+// Product record interface
+interface ProductRecord {
+  key: string;
+  category: string;
+  product: string;
+  entryTemperature: number;
+  dailyAmount: number;
+  totalCapacity: number;
+  coolingDuration: number;
+  onRemove?: (key: string) => void;
+}
+
 export const useProductState = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [productList, setProductList] = useState<any[]>([]);
+  const [productList, setProductList] = useState<ProductRecord[]>([]);
 
   return {
     selectedCategory,

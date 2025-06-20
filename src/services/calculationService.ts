@@ -5,6 +5,24 @@
 import { ProductThermalProperty } from './productService';
 import { solAirTemperatureService } from './solAirTemperatureService';
 
+// Design day data from Open Meteo API
+interface DesignDayData {
+  latitude: number;
+  longitude: number;
+  elevation: number;
+  hourly: {
+    time: string[];
+    temperature_2m: number[];
+    relative_humidity_2m: number[];
+    windspeed_10m: number[];
+    direct_radiation: number[];
+    diffuse_radiation: number[];
+    direct_normal_irradiance?: number[];
+    shortwave_radiation: number[];
+    surface_pressure?: number[];
+  };
+}
+
 // Sabitler
 const CONSTANTS = {
   AIR_DENSITY: 1.2, // kg/m³
@@ -90,7 +108,7 @@ export interface CalculationInput {
     elevation?: number | null;
     indoorTemperature?: number; // Bina içi sıcaklık
     indoorHumidity?: number; // Bina içi nem
-    designDayData?: any; // Tasarım günü saatlik verileri
+    designDayData?: DesignDayData; // Tasarım günü saatlik verileri
     maxTempDate?: string; // Maksimum sıcaklık tarihi
   };
   
@@ -573,7 +591,7 @@ class CalculationService {
   }
   
   // Pik yük saatini bul
-  private findPeakLoadHour(hourlyData: any, targetTemp: number): number {
+  private findPeakLoadHour(hourlyData: DesignDayData['hourly'], targetTemp: number): number {
     let maxLoad = 0;
     let peakHour = 14; // Varsayılan öğleden sonra
     
