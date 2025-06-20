@@ -511,7 +511,7 @@ class CalculationService {
       }
     }
     
-    // Motor yükü
+    // Motor yükü - ASHRAE Equation (2) ve (4)
     if (!internalLoads.motors.exclude && internalLoads.motors.hp > 0 && internalLoads.motors.count > 0 && internalLoads.motors.hoursPerDay > 0) {
       const dailyFactor = internalLoads.motors.hoursPerDay / CONSTANTS.HOURS_PER_DAY;
       const motorWatts = internalLoads.motors.hp * CONSTANTS.HP_TO_WATT * internalLoads.motors.count;
@@ -519,8 +519,13 @@ class CalculationService {
       // Motor verimliliğini HP'ye göre belirle
       const efficiency = this.getMotorEfficiency(internalLoads.motors.hp);
       
-      // Motor verimsizliği ısıya dönüşür
-      motors = motorWatts * (1 - efficiency) * dailyFactor;
+      // ASHRAE Equation (2): Motor ve ekipman içeride
+      // qem = P/EM × FUM × FLM
+      // Not: FUM (use factor) ve FLM (load factor) varsayılan olarak 1.0
+      motors = (motorWatts / efficiency) * dailyFactor;
+      
+      // Alternatif: Sadece motor içeride, ekipman dışarıda ise (ASHRAE Eq. 4):
+      // motors = motorWatts * ((1 - efficiency) / efficiency) * dailyFactor;
     }
     
     // Ekipman yükü
