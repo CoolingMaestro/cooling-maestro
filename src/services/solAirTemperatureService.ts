@@ -119,9 +119,9 @@ class SolAirTemperatureService {
    */
   calculateSolarAngles(
     latitude: number,
-    longitude: number,
+    _longitude: number, // Gelecekte detaylı hesaplama için kullanılacak
     dateTime: Date,
-    timezone: string = 'Europe/Istanbul'
+    _timezone: string = 'Europe/Istanbul' // Gelecekte detaylı hesaplama için kullanılacak
   ): { altitude: number; azimuth: number } {
     // Bu basitleştirilmiş bir örnektir
     // Gerçek uygulamada ASHRAE Chapter 14 formülleri veya 
