@@ -456,11 +456,13 @@ const App: React.FC = () => {
             hp: formValues.excludeMotors ? 0 : (formValues.motorHP || 0),
             count: formValues.excludeMotors ? 0 : (formValues.motorCount || 0),
             hoursPerDay: formValues.excludeMotors ? 0 : (formValues.motorHoursPerDay || 0),
+            location: formValues.excludeMotors ? undefined : (formValues.motorLocation || 'both_inside'),
           },
           equipment: {
             exclude: formValues.excludeEquipment === true,
             totalWatt: formValues.excludeEquipment ? 0 : (formValues.equipmentTotalWatt || 0),
             hoursPerDay: formValues.excludeEquipment ? 0 : (formValues.equipmentHoursPerDay || 0),
+            type: formValues.excludeEquipment ? undefined : (formValues.equipmentType || 'general'),
           },
         },
         infiltration: {

@@ -40,6 +40,30 @@ const ACTIVITY_HEAT_LOADS: { [key: string]: ActivityHeatLoad } = {
   "athletics": { total: 528, sensible: 208, latent: 320, radiantFraction: 0.54 }
 };
 
+// ASHRAE ekipman tipleri için ısı dağılım faktörleri
+interface EquipmentHeatFactors {
+  usageFactor: number;    // Kullanım faktörü (FU)
+  sensibleRatio: number;  // Duyulur ısı oranı
+  latentRatio: number;    // Gizli ısı oranı
+}
+
+const EQUIPMENT_HEAT_FACTORS: { [key: string]: EquipmentHeatFactors } = {
+  "computer_light": { usageFactor: 0.50, sensibleRatio: 1.00, latentRatio: 0.00 }, // Light office use
+  "computer_medium": { usageFactor: 0.65, sensibleRatio: 1.00, latentRatio: 0.00 }, // Medium office use
+  "computer_heavy": { usageFactor: 0.80, sensibleRatio: 1.00, latentRatio: 0.00 }, // Heavy office use
+  "kitchen_hooded": { usageFactor: 0.25, sensibleRatio: 0.34, latentRatio: 0.00 }, // Hooded - sadece radyant
+  "kitchen_unhooded": { usageFactor: 0.25, sensibleRatio: 0.34, latentRatio: 0.66 }, // Unhooded - radyant + konvektif + latent
+  "medical": { usageFactor: 0.50, sensibleRatio: 0.90, latentRatio: 0.10 }, // Medical equipment
+  "industrial": { usageFactor: 0.80, sensibleRatio: 0.95, latentRatio: 0.05 }, // Industrial equipment
+  "forklift_electric": { usageFactor: 0.30, sensibleRatio: 0.85, latentRatio: 0.15 }, // Elektrikli forklift (şarj + operasyon)
+  "forklift_propane": { usageFactor: 0.30, sensibleRatio: 0.70, latentRatio: 0.30 }, // Propanlı forklift (yanma ürünleri)
+  "crane_overhead": { usageFactor: 0.20, sensibleRatio: 0.95, latentRatio: 0.05 }, // Tavan vinci
+  "conveyor": { usageFactor: 0.70, sensibleRatio: 0.95, latentRatio: 0.05 }, // Konveyör bant
+  "pallet_jack": { usageFactor: 0.25, sensibleRatio: 0.90, latentRatio: 0.10 }, // Elektrikli transpalet
+  "battery_charger": { usageFactor: 0.40, sensibleRatio: 0.95, latentRatio: 0.05 }, // Forklift batarya şarj istasyonu
+  "general": { usageFactor: 0.50, sensibleRatio: 1.00, latentRatio: 0.00 } // General equipment
+};
+
 // Motor verimliliği tablosu (HP aralıklarına göre)
 const MOTOR_EFFICIENCY_TABLE = [
   { minHP: 0, maxHP: 1, efficiency: 0.72 },     // Küçük motorlar
@@ -128,11 +152,13 @@ export interface CalculationInput {
       hp?: number;
       count?: number;
       hoursPerDay?: number;
+      location?: string; // Motor location: 'both_inside', 'motor_outside', 'equipment_outside'
     };
     equipment: {
       exclude: boolean;
       totalWatt?: number;
       hoursPerDay?: number;
+      type?: string; // Equipment type for heat factors
     };
   };
   
@@ -380,12 +406,13 @@ class CalculationService {
     input.products.forEach(product => {
       const { dailyAmount, entryTemperature, coolingDuration, thermalProperties } = product;
       // Sıfıra bölme kontrolü
+      let effectiveCoolingDuration = coolingDuration;
       if (coolingDuration === 0) {
         console.warn(`Ürün ${product.product}: Soğutma süresi 0, varsayılan 24 saat kullanılıyor`);
-        coolingDuration = 24;
+        effectiveCoolingDuration = 24;
       }
       
-      const massFlowRate = dailyAmount / coolingDuration; // kg/h (soğutma süresi boyunca)
+      const massFlowRate = dailyAmount / effectiveCoolingDuration; // kg/h (soğutma süresi boyunca)
       
       // Hedef sıcaklık (input'tan gelen targetTemperature kullan)
       const targetTemp = input.targetTemperature;
@@ -478,13 +505,15 @@ class CalculationService {
     let equipment = 0;
     
     // Aydınlatma yükü
-    if (!internalLoads.lighting.exclude && internalLoads.lighting.totalWatt > 0 && internalLoads.lighting.hoursPerDay > 0) {
+    if (!internalLoads.lighting.exclude && internalLoads.lighting.totalWatt && internalLoads.lighting.totalWatt > 0 && 
+        internalLoads.lighting.hoursPerDay && internalLoads.lighting.hoursPerDay > 0) {
       const dailyFactor = internalLoads.lighting.hoursPerDay / CONSTANTS.HOURS_PER_DAY;
       lighting = internalLoads.lighting.totalWatt * dailyFactor;
     }
     
     // İnsan yükü - ASHRAE Table 1 değerleri kullanılıyor
-    if (!internalLoads.people.exclude && internalLoads.people.count > 0 && internalLoads.people.hoursPerDay > 0) {
+    if (!internalLoads.people.exclude && internalLoads.people.count && internalLoads.people.count > 0 && 
+        internalLoads.people.hoursPerDay && internalLoads.people.hoursPerDay > 0) {
       const dailyFactor = internalLoads.people.hoursPerDay / CONSTANTS.HOURS_PER_DAY;
       
       // Aktivite tipine göre ısı yüklerini al
@@ -511,27 +540,55 @@ class CalculationService {
       }
     }
     
-    // Motor yükü - ASHRAE Equation (2) ve (4)
-    if (!internalLoads.motors.exclude && internalLoads.motors.hp > 0 && internalLoads.motors.count > 0 && internalLoads.motors.hoursPerDay > 0) {
+    // Motor yükü - ASHRAE Equation (2), (3) ve (4)
+    if (!internalLoads.motors.exclude && internalLoads.motors.hp && internalLoads.motors.hp > 0 && 
+        internalLoads.motors.count && internalLoads.motors.count > 0 && 
+        internalLoads.motors.hoursPerDay && internalLoads.motors.hoursPerDay > 0) {
       const dailyFactor = internalLoads.motors.hoursPerDay / CONSTANTS.HOURS_PER_DAY;
       const motorWatts = internalLoads.motors.hp * CONSTANTS.HP_TO_WATT * internalLoads.motors.count;
       
       // Motor verimliliğini HP'ye göre belirle
       const efficiency = this.getMotorEfficiency(internalLoads.motors.hp);
       
-      // ASHRAE Equation (2): Motor ve ekipman içeride
-      // qem = P/EM × FUM × FLM
-      // Not: FUM (use factor) ve FLM (load factor) varsayılan olarak 1.0
-      motors = (motorWatts / efficiency) * dailyFactor;
+      // Motor konumuna göre ısı yükü hesapla
+      const location = internalLoads.motors.location || 'both_inside';
       
-      // Alternatif: Sadece motor içeride, ekipman dışarıda ise (ASHRAE Eq. 4):
-      // motors = motorWatts * ((1 - efficiency) / efficiency) * dailyFactor;
+      switch (location) {
+        case 'both_inside':
+          // ASHRAE Equation (2): Motor ve ekipman içeride
+          // qem = P/EM × FUM × FLM
+          motors = (motorWatts / efficiency) * dailyFactor;
+          break;
+          
+        case 'motor_outside':
+          // ASHRAE Equation (3): Motor dışarıda, ekipman içeride
+          // qem = P × FUM × FLM
+          motors = motorWatts * dailyFactor;
+          break;
+          
+        case 'equipment_outside':
+          // ASHRAE Equation (4): Motor içeride, ekipman dışarıda
+          // qem = P × (1 - EM)/EM × FUM × FLM
+          motors = motorWatts * ((1 - efficiency) / efficiency) * dailyFactor;
+          break;
+          
+        default:
+          // Varsayılan: Her ikisi de içeride
+          motors = (motorWatts / efficiency) * dailyFactor;
+      }
     }
     
-    // Ekipman yükü
-    if (!internalLoads.equipment.exclude && internalLoads.equipment.totalWatt > 0 && internalLoads.equipment.hoursPerDay > 0) {
+    // Ekipman yükü - ASHRAE equipment factors kullanılıyor
+    if (!internalLoads.equipment.exclude && internalLoads.equipment.totalWatt && internalLoads.equipment.totalWatt > 0 && 
+        internalLoads.equipment.hoursPerDay && internalLoads.equipment.hoursPerDay > 0) {
       const dailyFactor = internalLoads.equipment.hoursPerDay / CONSTANTS.HOURS_PER_DAY;
-      equipment = internalLoads.equipment.totalWatt * dailyFactor;
+      
+      // Ekipman tipine göre faktörleri al
+      const equipmentType = internalLoads.equipment.type || 'general';
+      const heatFactors = EQUIPMENT_HEAT_FACTORS[equipmentType] || EQUIPMENT_HEAT_FACTORS['general'];
+      
+      // ASHRAE: Nameplate power × Usage factor × Daily factor
+      equipment = internalLoads.equipment.totalWatt * heatFactors.usageFactor * dailyFactor;
     }
     
     return {

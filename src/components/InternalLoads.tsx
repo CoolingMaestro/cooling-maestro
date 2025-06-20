@@ -154,17 +154,23 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
     
     // ASHRAE'ye göre ekipman kullanım faktörleri
     const equipmentFactors: { [key: string]: { usageFactor: number; sensibleRatio: number } } = {
-      "computers": { usageFactor: 0.75, sensibleRatio: 1.0 },      // Bilgisayarlar - %75 kullanım, %100 duyulur
-      "printers": { usageFactor: 0.50, sensibleRatio: 1.0 },       // Yazıcılar - %50 kullanım
-      "copiers": { usageFactor: 0.30, sensibleRatio: 1.0 },        // Fotokopi - %30 kullanım
-      "servers": { usageFactor: 1.0, sensibleRatio: 1.0 },         // Sunucular - %100 kullanım
-      "kitchen_dry": { usageFactor: 0.50, sensibleRatio: 1.0 },    // Kuru mutfak ekipmanı
-      "kitchen_wet": { usageFactor: 0.50, sensibleRatio: 0.70 },   // Islak mutfak ekipmanı - %30 gizli ısı
-      "refrigeration": { usageFactor: 0.80, sensibleRatio: 1.0 },  // Soğutma ekipmanı
-      "other": { usageFactor: 0.70, sensibleRatio: 1.0 }           // Diğer
+      "computer_light": { usageFactor: 0.50, sensibleRatio: 1.00 },
+      "computer_medium": { usageFactor: 0.65, sensibleRatio: 1.00 },
+      "computer_heavy": { usageFactor: 0.80, sensibleRatio: 1.00 },
+      "kitchen_hooded": { usageFactor: 0.25, sensibleRatio: 1.00 },    // Davlumbazlı - sadece radyant
+      "kitchen_unhooded": { usageFactor: 0.25, sensibleRatio: 0.34 },  // Davlumbazsız - %66 gizli
+      "medical": { usageFactor: 0.50, sensibleRatio: 0.90 },
+      "industrial": { usageFactor: 0.80, sensibleRatio: 0.95 },
+      "forklift_electric": { usageFactor: 0.30, sensibleRatio: 0.85 }, // %15 gizli (batarya ısınması)
+      "forklift_propane": { usageFactor: 0.30, sensibleRatio: 0.70 },  // %30 gizli (yanma ürünleri)
+      "crane_overhead": { usageFactor: 0.20, sensibleRatio: 0.95 },
+      "conveyor": { usageFactor: 0.70, sensibleRatio: 0.95 },
+      "pallet_jack": { usageFactor: 0.25, sensibleRatio: 0.90 },
+      "battery_charger": { usageFactor: 0.40, sensibleRatio: 0.95 },
+      "general": { usageFactor: 0.50, sensibleRatio: 1.00 }
     };
     
-    const factor = equipmentFactors[equipmentType] || equipmentFactors["other"];
+    const factor = equipmentFactors[equipmentType] || equipmentFactors["general"];
     
     // Gerçek güç tüketimi = Nameplate × Kullanım faktörü
     const actualPower = equipmentWatt * factor.usageFactor;
@@ -856,20 +862,22 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
                     <div style={{ fontSize: '12px' }}>
                       <strong>ASHRAE'ye göre ekipman kullanım faktörleri:</strong>
                       <br /><br />
-                      <strong>• Bilgisayarlar:</strong> %75 kullanım<br />
-                      Nameplate değerinin %75'i gerçek tüketim<br /><br />
+                      <strong>Ofis Ekipmanları:</strong><br />
+                      • Bilgisayar (Hafif): %50<br />
+                      • Bilgisayar (Orta): %65<br />
+                      • Bilgisayar (Yoğun): %80<br /><br />
                       
-                      <strong>• Yazıcılar:</strong> %50 kullanım<br />
-                      Çoğu zaman bekleme modunda<br /><br />
+                      <strong>Mutfak Ekipmanları:</strong><br />
+                      • Davlumbazlı: %25 (sadece radyant)<br />
+                      • Davlumbazsız: %25 (%66 gizli ısı)<br /><br />
                       
-                      <strong>• Fotokopi:</strong> %30 kullanım<br />
-                      Aralıklı kullanım<br /><br />
-                      
-                      <strong>• Sunucular:</strong> %100 kullanım<br />
-                      Sürekli tam güçte çalışır<br /><br />
-                      
-                      <strong>• Islak mutfak:</strong> %50 kullanım, %30 gizli ısı<br />
-                      Buhar ve nem üretir<br /><br />
+                      <strong>Depo/Lojistik Ekipmanları:</strong><br />
+                      • Elektrikli Forklift: %30<br />
+                      • Propanlı Forklift: %30 (%30 gizli)<br />
+                      • Tavan Vinci: %20<br />
+                      • Konveyör: %70<br />
+                      • Transpalet: %25<br />
+                      • Batarya Şarj: %40<br /><br />
                       
                       <em>Formül: Gerçek Güç = Nameplate × Kullanım Faktörü</em>
                     </div>
@@ -901,14 +909,20 @@ const InternalLoads: React.FC<InternalLoadsProps> = ({ form, roomDryBulbTemperat
                 });
               }}
             >
-              <Option value="computers">Bilgisayarlar (%75)</Option>
-              <Option value="printers">Yazıcılar (%50)</Option>
-              <Option value="copiers">Fotokopi Makineleri (%30)</Option>
-              <Option value="servers">Sunucular (%100)</Option>
-              <Option value="kitchen_dry">Kuru Mutfak Ekipmanı (%50)</Option>
-              <Option value="kitchen_wet">Islak Mutfak Ekipmanı (%50, %30 gizli)</Option>
-              <Option value="refrigeration">Soğutma Ekipmanı (%80)</Option>
-              <Option value="other">Diğer (%70)</Option>
+              <Option value="computer_light">Bilgisayar - Hafif Kullanım (%50)</Option>
+              <Option value="computer_medium">Bilgisayar - Orta Kullanım (%65)</Option>
+              <Option value="computer_heavy">Bilgisayar - Yoğun Kullanım (%80)</Option>
+              <Option value="kitchen_hooded">Mutfak Ekipmanı - Davlumbazlı (%25)</Option>
+              <Option value="kitchen_unhooded">Mutfak Ekipmanı - Davlumbazsız (%25)</Option>
+              <Option value="medical">Medikal Ekipman (%50)</Option>
+              <Option value="industrial">Endüstriyel Ekipman (%80)</Option>
+              <Option value="forklift_electric">Elektrikli Forklift (%30)</Option>
+              <Option value="forklift_propane">Propanlı Forklift (%30)</Option>
+              <Option value="crane_overhead">Tavan Vinci (%20)</Option>
+              <Option value="conveyor">Konveyör Bant (%70)</Option>
+              <Option value="pallet_jack">Elektrikli Transpalet (%25)</Option>
+              <Option value="battery_charger">Forklift Batarya Şarj İstasyonu (%40)</Option>
+              <Option value="general">Genel Ekipman (%50)</Option>
             </Select>
           </Form.Item>
           <Form.Item
