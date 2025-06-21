@@ -20,11 +20,11 @@ import { useNavigate } from "react-router-dom";
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
-interface KarsilamaProps {
+interface LandingPageProps {
   onStartCalculation?: () => void;
 }
 
-const Karsilama: React.FC<KarsilamaProps> = ({
+const LandingPage: React.FC<LandingPageProps> = ({
   onStartCalculation,
 }) => {
   const [form] = Form.useForm();
@@ -752,4 +752,4 @@ const Karsilama: React.FC<KarsilamaProps> = ({
   );
 };
 
-export default Karsilama;
+export default LandingPage;

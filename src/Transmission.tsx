@@ -112,15 +112,6 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     if (formValues.roomDimensions) {
       setRoomDimensions(formValues.roomDimensions);
     }
-    // Watch for form changes
-    const unsubscribe = form.getInternalHooks('RC_FORM_INTERNAL_HOOKS')?.registerWatch?.(
-      (values: any) => {
-        if (values.roomDimensions) {
-          setRoomDimensions(values.roomDimensions);
-        }
-      }
-    );
-    return () => unsubscribe?.();
   }, [form]);
 
   // İklim verilerini prop'tan al
