@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalculationResult } from "../services/calculationService";
-import { DesignDayData, ClimateData } from "../types/climate.types";
+import { ClimateData } from "../types/climate.types";
 
 export const useCalculationState = () => {
   const [selectedCalculationType, setSelectedCalculationType] = useState<
