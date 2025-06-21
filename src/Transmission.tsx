@@ -58,8 +58,8 @@ interface WallData {
 
 interface DoorData {
   id: string;
-  wall: string;
-  doorType: string;
+  wall?: string;
+  doorType?: string;
   quantity: number;
   height: number;
   width: number;
@@ -92,16 +92,18 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
     { id: 'floor', type: 'floor', name: 'Floor', insulationType: '', thickness: '', color: '', orientation: '', tdValue: 0, uValue: 0, load: 0, width: 5, height: 4 },
   ]);
   const [doorsData, setDoorsData] = useState<DoorData[]>([
-    { id: 'door1', wall: '', doorType: '', quantity: 1, height: 0, width: 0, uValue: 0, load: 0 }
+    { id: 'door1', wall: undefined, doorType: undefined, quantity: 1, height: 0, width: 0, uValue: 0, load: 0 }
   ]);
   const [insulationTypes, setInsulationTypes] = useState<string[]>([]);
   const [floorInsulationTypes, setFloorInsulationTypes] = useState<string[]>([]);
+  const [doorInsulationTypes, setDoorInsulationTypes] = useState<string[]>([]);
   const [thicknessOptions, setThicknessOptions] = useState<Map<string, number[]>>(new Map());
   const [floorThicknessOptions, setFloorThicknessOptions] = useState<Map<string, number[]>>(new Map());
   const [colorOptions, setColorOptions] = useState<string[]>([]);
   const [floorColorOptions, setFloorColorOptions] = useState<string[]>([]);
   const [insulationData, setInsulationData] = useState<Map<string, { u_value: number; solar_absorptance: number }>>(new Map());
   const [floorInsulationData, setFloorInsulationData] = useState<Map<string, { u_value: number; solar_absorptance: number }>>(new Map());
+  const [doorInsulationData, setDoorInsulationData] = useState<Map<string, { u_value: number; solar_absorptance: number }>>(new Map());
   const [targetIndoorTemp, setTargetIndoorTemp] = useState<number | undefined>(undefined);
   const [ambientTemp, setAmbientTemp] = useState<number | undefined>(undefined);
   const [outdoorTemp, setOutdoorTemp] = useState<number | undefined>(undefined);
@@ -307,6 +309,96 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
 
     fetchFloorInsulationData();
   }, []);
+
+  // Door insulation types verileri
+  useEffect(() => {
+    const fetchDoorInsulationData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('insulation_types')
+          .select('name, u_value, solar_absorptance')
+          .eq('surface', 'door')
+          .order('name');
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          // Unique door types
+          const uniqueTypes = [...new Set(data.map(item => item.name))];
+          setDoorInsulationTypes(uniqueTypes);
+
+          // Door insulation verilerini sakla
+          const dataMap = new Map<string, { u_value: number; solar_absorptance: number }>();
+          
+          data.forEach(item => {
+            dataMap.set(item.name, {
+              u_value: item.u_value,
+              solar_absorptance: item.solar_absorptance || 0
+            });
+          });
+
+          setDoorInsulationData(dataMap);
+        } else {
+          console.log('No door insulation data found');
+          message.warning('Kapı izolasyon verileri bulunamadı');
+        }
+      } catch (error) {
+        console.error('Error fetching door insulation data:', error);
+        message.error('Kapı izolasyon verileri yüklenirken hata oluştu');
+      }
+    };
+
+    fetchDoorInsulationData();
+  }, []);
+
+  // Kapı yüklerini hesapla
+  useEffect(() => {
+    const newDoorsData = doorsData.map(door => {
+      // Kapı tipi seçilmemişse yük 0
+      if (!door.doorType || !door.wall) {
+        return { ...door, uValue: 0, load: 0 };
+      }
+
+      // Kapı için U değerini al
+      const doorInsulation = doorInsulationData.get(door.doorType);
+      const uValue = doorInsulation?.u_value || 0;
+
+      // TD hesaplaması - duvarlarla aynı mantık
+      let tdValue = 0;
+      if (roomDimensions.location === 'outside') {
+        if (targetIndoorTemp !== undefined && outdoorTemp !== undefined) {
+          tdValue = Math.abs(targetIndoorTemp - outdoorTemp);
+        }
+      } else {
+        if (targetIndoorTemp !== undefined && ambientTemp !== undefined) {
+          tdValue = Math.abs(targetIndoorTemp - ambientTemp);
+        }
+      }
+
+      // Alan hesapla (m²)
+      const area = door.width * door.height;
+
+      // ASHRAE formülü: Q = U × A × ΔT
+      const load = uValue * area * tdValue * door.quantity;
+
+      return {
+        ...door,
+        uValue: uValue,
+        load: parseFloat(load.toFixed(2))
+      };
+    });
+
+    // Sadece değerler değiştiyse güncelle
+    const hasChanged = newDoorsData.some((newDoor, index) => 
+      newDoor.load !== doorsData[index].load || 
+      newDoor.uValue !== doorsData[index].uValue
+    );
+
+    if (hasChanged) {
+      setDoorsData(newDoorsData);
+    }
+  }, [doorsData.map(d => `${d.doorType}_${d.wall}_${d.width}_${d.height}_${d.quantity}`).join(','), 
+      doorInsulationData, targetIndoorTemp, ambientTemp, outdoorTemp, roomDimensions.location]);
 
   // Tek bir duvar için yük hesaplama fonksiyonu
   const calculateWallLoad = (wall: WallData) => {
@@ -741,7 +833,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       key: 'load',
       render: (value: number) => (
         <div style={{ textAlign: 'center' }}>
-          <span className="font-medium text-blue-600">{value.toFixed(2)}</span>
+          <span className="font-medium text-blue-600">{value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       ),
     },
@@ -750,7 +842,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
   // Kapı tablosu kolonları
   const doorColumns = [
     {
-      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Duvar *</span></div>,
+      title: <div style={{ textAlign: 'center' }}>Duvar</div>,
       dataIndex: 'wall',
       key: 'wall',
       render: (text: string, record: DoorData) => (
@@ -758,7 +850,8 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           <Select
             value={text}
             placeholder="[Lütfen Seçiniz]"
-            style={{ width: '100%' }}
+            style={{ width: 'auto', minWidth: '120px' }}
+            dropdownMatchSelectWidth={false}
             onChange={(value) => {
               const newData = doorsData.map(item => 
                 item.id === record.id ? { ...item, wall: value } : item
@@ -775,7 +868,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       ),
     },
     {
-      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Kapı Tipi *</span></div>,
+      title: <div style={{ textAlign: 'center' }}>Kapı Tipi</div>,
       dataIndex: 'doorType',
       key: 'doorType',
       render: (text: string, record: DoorData) => (
@@ -783,7 +876,8 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           <Select
             value={text}
             placeholder="[Lütfen Seçiniz]"
-            style={{ width: '100%' }}
+            style={{ width: 'auto', minWidth: '150px' }}
+            dropdownMatchSelectWidth={false}
             onChange={(value) => {
               const newData = doorsData.map(item => 
                 item.id === record.id ? { ...item, doorType: value } : item
@@ -791,16 +885,15 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
               setDoorsData(newData);
             }}
           >
-            <Option value="Single Glass">Tek Cam</Option>
-            <Option value="Double Glass">Çift Cam</Option>
-            <Option value="Insulated">Yalıtımlı</Option>
-            <Option value="Non-Glass">Camsız</Option>
+            {doorInsulationTypes.map(type => (
+              <Option key={type} value={type}>{type}</Option>
+            ))}
           </Select>
         </div>
       ),
     },
     {
-      title: <div style={{ textAlign: 'center' }}><span className="text-red-500">Adet *</span></div>,
+      title: <div style={{ textAlign: 'center' }}>Adet</div>,
       dataIndex: 'quantity',
       key: 'quantity',
       render: (value: number, record: DoorData) => (
@@ -873,7 +966,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
       key: 'load',
       render: (value: number) => (
         <div style={{ textAlign: 'center' }}>
-          <span className="font-medium text-blue-600">{value.toFixed(2)}</span>
+          <span className="font-medium text-blue-600">{value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       ),
     },
@@ -1204,7 +1297,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           <div className="flex justify-end">
             <div className="bg-gray-100 px-4 py-2 rounded">
               <span className="font-medium">Yük (Watt): </span>
-              <span className="text-blue-600 font-bold text-lg">{totalWallLoad.toFixed(2)}</span>
+              <span className="text-red-600 font-bold text-lg">{totalWallLoad.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>
@@ -1254,7 +1347,7 @@ const WallInsulation: React.FC<WallInsulationProps> = ({ form, climateData }) =>
           <div className="flex justify-end">
             <div className="bg-gray-100 px-4 py-2 rounded">
               <span className="font-medium">Yük (Watt): </span>
-              <span className="text-red-600 font-bold text-lg">{totalDoorLoad.toFixed(2)}</span>
+              <span className="text-red-600 font-bold text-lg">{totalDoorLoad.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>
